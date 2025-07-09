@@ -52,7 +52,7 @@ districts = ["All"] + sorted([d for d in df['dtname'].unique() if d != "All"])
 selected_dt = st.sidebar.selectbox("Select District", districts)
 
 subdistricts = ["All"] + sorted([s for s in df[df['dtname'] == selected_dt]['sdtname'].unique() if s != "All"])
-selected_sdt = st.sidebar.selectbox("Select Subdistrict", subdistricts)
+selected_sdt = st.sidebar.selectbox("Select Block", subdistricts)
 
 # --- Filter based on selection ---
 filtered = df[(df['dtname'] == selected_dt) & (df['sdtname'] == selected_sdt)]
@@ -110,7 +110,7 @@ add_trace(5, 1, "rain_sum", "Rainfall", "purple")
 # --- Update Layout ---
 fig.update_layout(
     height=1800,
-    title_text=f"Weekly Dengue and Climate Trends — {selected_dt} / {selected_sdt}",
+    title_text=f"Weekly Dengue and Climate Trends — {selected_dt} district / {selected_sdt} block",
     showlegend=False,
     margin=dict(t=80, b=60),
     template=None,  # Avoids grey text from some themes
@@ -128,7 +128,7 @@ for i in range(1, 6):  # 5 subplots
         tickfont=dict(size=11, color='black'),
         showgrid=True,
         gridcolor='lightgray',
-        title_text="Week Start Date",
+        # title_text="Week Start Date",
         dtick=604800000  # One week in ms
     )
 
