@@ -26,7 +26,6 @@ def load_drive():
             scopes=["https://www.googleapis.com/auth/drive"]
         )
         drive = GoogleDrive(gauth)
-
     return drive
 
 # --- Download file if not exists ---
@@ -45,7 +44,6 @@ def load_data():
     return df
 
 df = load_data()
-
 
 # --- Sidebar filters ---
 districts = ["All"] + sorted([d for d in df['dtname'].unique() if d != "All"])
@@ -78,8 +76,8 @@ fig = make_subplots(
     ]
 )
 
-# --- Add Traces ---
-def add_trace(row, col, y, name, color, thresholds=None):
+# --- Helper to add traces + thresholds ---
+def add_trace(row, col, y, name, color, thresholds=None, yaxis_opts=None, is_integer=False):
     fig.add_trace(go.Scatter(
         x=week_labels,
         y=filtered[y],
@@ -103,8 +101,22 @@ def add_trace(row, col, y, name, color, thresholds=None):
                 layer="below"
             )
 
-# Add each subplot
-add_trace(1, 1, "dengue_cases", "Dengue Cases", "crimson")
+    axis_name = f'yaxis{"" if row == 1 else row}'
+    axis_config = dict(
+        title=name,
+        showgrid=True,
+        zeroline=True,
+    )
+    if is_integer:
+        axis_config["tickformat"] = ",d"
+
+    if yaxis_opts:
+        axis_config.update(yaxis_opts)
+
+    fig.update_layout({axis_name: axis_config})
+
+# --- Add Each Subplot ---
+add_trace(1, 1, "dengue_cases", "Dengue Cases", "crimson", is_integer=True)
 add_trace(2, 1, "temperature_2m_max", "Max Temp", "orange", thresholds=[(None, 35)])
 add_trace(3, 1, "temperature_2m_min", "Min Temp", "blue", thresholds=[(18, None)])
 add_trace(4, 1, "relative_humidity_2m_mean", "Humidity", "green", thresholds=[(60, None)])
@@ -112,19 +124,22 @@ add_trace(5, 1, "rain_sum", "Rainfall", "purple")
 
 # --- Update Layout ---
 fig.update_layout(
-    height=1200,
+    height=1400,
     title_text=f"Weekly Dengue and Climate Trends — {selected_dt} / {selected_sdt}",
     template="plotly_white",
     showlegend=False,
-    margin=dict(t=80, b=40),
+    margin=dict(t=80, b=60),
 )
 
-# --- Configure x-axis ---
+# --- Configure x-axis globally ---
 fig.update_xaxes(
-    tickangle=90,
-    tickfont=dict(size=10),
-    showgrid=True
+    tickangle=0,
+    tickmode='array',
+    tickvals=week_labels,
+    ticktext=week_labels,
+    showgrid=True,
+    title_text="Week"
 )
 
-# --- Display Plot ---
+# --- Show Plot ---
 st.plotly_chart(fig, use_container_width=True)
