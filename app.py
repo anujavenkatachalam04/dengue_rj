@@ -26,17 +26,19 @@ def load_drive():
             scopes=["https://www.googleapis.com/auth/drive"]
         )
         drive = GoogleDrive(gauth)
+
     return drive
 
 # --- Download file if not exists ---
 csv_path = "time_series_dashboard.csv"
 if not os.path.exists(csv_path):
     drive = load_drive()
-    file_id = "1ad-PcGSpk6YoO-ZolodMWfvFq64kO-Z_"
+    file_id = "1ad-PcGSpk6YoO-ZolodMWfvFq64kO-Z_"  # Replace with your actual file ID
     downloaded = drive.CreateFile({'id': file_id})
     downloaded.GetContentFile(csv_path)
 
 # --- Load CSV ---
+@st.cache_data
 def load_data():
     df = pd.read_csv(csv_path, parse_dates=["week_start_date"])
     df['dtname'] = df['dtname'].astype(str).str.strip()
@@ -59,9 +61,9 @@ if filtered.empty:
     st.warning("No data available for this selection.")
     st.stop()
 
-# --- Prepare labels and sort ---
+# --- Sort by date and prepare x-axis labels ---
 filtered = filtered.sort_values("week_start_date")
-week_labels = filtered['week_start_date'].dt.strftime('%y-W%U')
+week_dates = filtered["week_start_date"]
 
 # --- Create Plotly Subplots ---
 fig = make_subplots(
@@ -76,30 +78,16 @@ fig = make_subplots(
     ]
 )
 
-# --- Helper to add traces + thresholds ---
-def add_trace(row, col, y, name, color, thresholds=None, yaxis_opts=None, is_integer=False):
+# --- Add Traces ---
+def add_trace(row, col, y, name, color, is_integer=False):
     fig.add_trace(go.Scatter(
-        x=week_labels,
+        x=week_dates,
         y=filtered[y],
         name=name,
         mode="lines+markers",
         marker=dict(size=4),
         line=dict(color=color)
     ), row=row, col=col)
-
-    if thresholds:
-        for tmin, tmax in thresholds:
-            fig.add_shape(
-                type="rect",
-                x0=week_labels.iloc[0], x1=week_labels.iloc[-1],
-                y0=tmin if tmin is not None else -9999,
-                y1=tmax if tmax is not None else 9999,
-                fillcolor="lightgreen",
-                opacity=0.3,
-                line_width=0,
-                row=row, col=col,
-                layer="below"
-            )
 
     axis_name = f'yaxis{"" if row == 1 else row}'
     axis_config = dict(
@@ -110,36 +98,34 @@ def add_trace(row, col, y, name, color, thresholds=None, yaxis_opts=None, is_int
     if is_integer:
         axis_config["tickformat"] = ",d"
 
-    if yaxis_opts:
-        axis_config.update(yaxis_opts)
-
     fig.update_layout({axis_name: axis_config})
 
-# --- Add Each Subplot ---
+# Add each subplot
 add_trace(1, 1, "dengue_cases", "Dengue Cases", "crimson", is_integer=True)
-add_trace(2, 1, "temperature_2m_max", "Max Temp", "orange", thresholds=[(None, 35)])
-add_trace(3, 1, "temperature_2m_min", "Min Temp", "blue", thresholds=[(18, None)])
-add_trace(4, 1, "relative_humidity_2m_mean", "Humidity", "green", thresholds=[(60, None)])
+add_trace(2, 1, "temperature_2m_max", "Max Temp", "orange")
+add_trace(3, 1, "temperature_2m_min", "Min Temp", "blue")
+add_trace(4, 1, "relative_humidity_2m_mean", "Humidity", "green")
 add_trace(5, 1, "rain_sum", "Rainfall", "purple")
 
 # --- Update Layout ---
 fig.update_layout(
-    height=1400,
+    height=1800,
     title_text=f"Weekly Dengue and Climate Trends — {selected_dt} / {selected_sdt}",
-    template="plotly_white",
     showlegend=False,
     margin=dict(t=80, b=60),
+    template="plotly_white",
+    plot_bgcolor="white",
+    paper_bgcolor="white"
 )
 
-# --- Configure x-axis globally ---
+# --- Configure X-axis globally ---
 fig.update_xaxes(
     tickangle=0,
-    tickmode='array',
-    tickvals=week_labels,
-    ticktext=week_labels,
+    tickformat="%d-%b",  # e.g., 01-Jan
+    tickfont=dict(size=10),
     showgrid=True,
-    title_text="Week"
+    title_text="Week Start Date"
 )
 
-# --- Show Plot ---
+# --- Display Plot ---
 st.plotly_chart(fig, use_container_width=True)
