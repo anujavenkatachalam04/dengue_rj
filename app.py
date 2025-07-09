@@ -9,14 +9,19 @@ st.set_page_config(page_title="Dengue Climate Dashboard", layout="wide")
 
 @st.cache_resource
 def load_drive():
-    creds_str = st.secrets["gdrive_creds"]
-    creds_dict = json.loads(creds_str)
+    # Load the service account JSON string from Streamlit secrets
+    creds_dict = json.loads(st.secrets["gdrive_creds"])
 
+    # Create a credentials object using Google-auth
+    credentials = Credentials.from_service_account_info(creds_dict)
+
+    # Set up PyDrive2 authentication manually
     gauth = GoogleAuth()
-    gauth.settings['client_config'] = creds_dict  # ✅ load directly from memory
-    gauth.ServiceAuth()  # ✅ authenticate with service account
+    gauth.credentials = credentials
 
-    return GoogleDrive(gauth)
+    # Build the drive instance
+    drive = GoogleDrive(gauth)
+    return drive
 
 
 # --- SETUP: Load CSV from Google Drive using file ID ---
