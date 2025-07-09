@@ -13,23 +13,28 @@ def load_drive():
     import tempfile
     from pydrive2.auth import GoogleAuth
     from pydrive2.drive import GoogleDrive
+    from oauth2client.service_account import ServiceAccountCredentials
 
-    # Parse credentials from Streamlit secrets
+    # Load credentials from secrets
     creds_json = st.secrets["gdrive_creds"]
     creds_dict = json.loads(creds_json)
 
-    # Write creds to a temporary file (PyDrive2 requires a file path)
-    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp:
-        json.dump(creds_dict, temp)
-        temp.flush()
+    # Save service account JSON to a temp file
+    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as tmp:
+        json.dump(creds_dict, tmp)
+        tmp.flush()
 
-        # Authenticate using service account
+        # Create GoogleAuth instance and authorize with service account
         gauth = GoogleAuth()
-        gauth.LoadServiceConfigFile(temp.name)
-        gauth.ServiceAuth()
+        gauth.credentials = ServiceAccountCredentials.from_json_keyfile_name(
+            tmp.name,
+            scopes=["https://www.googleapis.com/auth/drive"]
+        )
+
         drive = GoogleDrive(gauth)
 
     return drive
+
 
 
 # --- SETUP: Load CSV from Google Drive using file ID ---
