@@ -1,3 +1,4 @@
+pydrive2
 streamlit
 plotly
 pandas
