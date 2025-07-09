@@ -34,7 +34,12 @@ def load_data():
     df = pd.read_csv("time_series_dashboard.csv", parse_dates=['week_start_date'])
     return df
 
-df = load_data()
+# Download file from Drive if not already present
+drive = load_drive()
+file_id = "1ad-PcGSpk6YoO-ZolodMWfvFq64kO-Z_"  # ← Replace with your actual file ID
+downloaded = drive.CreateFile({'id': file_id})
+downloaded.GetContentFile("time_series_dashboard.csv")
+
 
 # --- Sidebar filters ---
 districts = ["All"] + sorted([d for d in df['dtname'].unique() if d != "All"])
