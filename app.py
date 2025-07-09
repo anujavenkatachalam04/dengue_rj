@@ -28,18 +28,27 @@ def load_drive():
 
     return drive
 
-# --- Load data ---
+import os
+
+# Load Drive
+drive = load_drive()
+
+# Check if file exists, if not, download it
+csv_path = "time_series_dashboard.csv"
+if not os.path.exists(csv_path):
+    file_id = "1ad-PcGSpk6YoO-ZolodMWfvFq64kO-Z_"  # ← Your file ID
+    downloaded = drive.CreateFile({'id': file_id})
+    downloaded.GetContentFile(csv_path)
+
+# Now load the data
 @st.cache_data
 def load_data():
-    df = pd.read_csv("time_series_dashboard.csv", parse_dates=['week_start_date'])
+    df = pd.read_csv("time_series_dashboard.csv", parse_dates=["week_start_date"])
+    df['dtname'] = df['dtname'].astype(str).str.strip()
+    df['sdtname'] = df['sdtname'].astype(str).str.strip()
     return df
 
-# Download file from Drive if not already present
-drive = load_drive()
-file_id = "1ad-PcGSpk6YoO-ZolodMWfvFq64kO-Z_"  # ← Replace with your actual file ID
-downloaded = drive.CreateFile({'id': file_id})
-downloaded.GetContentFile("time_series_dashboard.csv")
-
+df = load_data()
 
 # --- Sidebar filters ---
 districts = ["All"] + sorted([d for d in df['dtname'].unique() if d != "All"])
