@@ -1,7 +1,5 @@
-pydrive2
 streamlit
-plotly
 pandas
-matplotlib
-seaborn
-
+plotly
+pydrive2
+oauth2client
