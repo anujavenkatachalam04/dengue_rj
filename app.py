@@ -38,78 +38,82 @@ def load_drive():
 
 
 # --- SETUP: Load CSV from Google Drive using file ID ---
+import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import matplotlib
+matplotlib.use("Agg")  # Non-interactive backend
+
+# Load data
 @st.cache_data
-def load_data(file_id):
-    drive = load_drive()
-    downloaded = drive.CreateFile({'id': file_id})
-    downloaded.GetContentFile("time_series_dashboard.csv")
-    df = pd.read_csv("time_series_dashboard.csv", parse_dates=["week_start_date"])
+def load_data():
+    df = pd.read_csv("time_series_dashboard.csv", parse_dates=['week_start_date'])
+    df['dtname'] = df['dtname'].astype(str).str.strip()
+    df['sdtname'] = df['sdtname'].astype(str).str.strip()
     return df
 
-# --- CONFIG ---
-st.title("Dengue & Climate Time Series, Rajasthan (2024-2025)")
+df = load_data()
 
-# --- Your Google Drive FILE ID here ---
-FILE_ID = "1ad-PcGSpk6YoO-ZolodMWfvFq64kO-Z_" 
-df = load_data(FILE_ID)
+# Sidebar filters
+districts = ["All"] + sorted(df['dtname'].unique())
+selected_dt = st.sidebar.selectbox("Select District", districts)
 
-# --- Sidebar Filters ---
-districts = ["All"] + sorted([d for d in df['dtname'].dropna().unique() if d != "All"])
-dt_filter = st.sidebar.selectbox("Select District (dtname):", districts)
-
-if dt_filter == "All":
-    sdt_filter = st.sidebar.selectbox("Select Sub-District (sdtname):", ["All"], disabled=True)
+if selected_dt == "All":
+    selected_sdt = st.sidebar.selectbox("Select Subdistrict", ["All"], disabled=True)
+    filtered = df.copy()
 else:
-    subdistricts = ["All"] + sorted([s for s in df[df['dtname'] == dt_filter]['sdtname'].dropna().unique() if s != "All"])
-    sdt_filter = st.sidebar.selectbox("Select Sub-District (sdtname):", subdistricts)
+    subdistricts = ["All"] + sorted(df[df['dtname'] == selected_dt]['sdtname'].unique())
+    selected_sdt = st.sidebar.selectbox("Select Subdistrict", subdistricts)
 
-# --- Filter Data ---
-if dt_filter == "All" and sdt_filter == "All":
-    filtered_df = df.copy()
-elif sdt_filter == "All":
-    filtered_df = df[df['dtname'] == dt_filter]
-else:
-    filtered_df = df[(df['dtname'] == dt_filter) & (df['sdtname'] == sdt_filter)]
+    if selected_sdt == "All":
+        df_all = df[(df['dtname'] == selected_dt) & (df['sdtname'] != "All")]
+        if df_all.empty:
+            st.warning("No subdistrict-level data available.")
+            st.stop()
+        filtered = df_all.groupby(['iso_year_week', 'week_start_date']).agg({
+            'dengue_cases': 'sum',
+            'temperature_2m_max': 'mean',
+            'temperature_2m_min': 'mean',
+            'relative_humidity_2m_mean': 'mean',
+            'rain_sum': 'sum'
+        }).reset_index()
+    else:
+        filtered = df[(df['dtname'] == selected_dt) & (df['sdtname'] == selected_sdt)]
 
-filtered_df = filtered_df.sort_values("week_start_date")
+if filtered.empty:
+    st.warning("No data available for this selection.")
+    st.stop()
 
-# --- Plotting ---
-fig = go.Figure()
+# Prepare week label
+filtered['Week_Label'] = filtered['week_start_date'].dt.strftime('%y-W%U')
+plot_vars = ['dengue_cases', 'temperature_2m_max', 'temperature_2m_min', 'relative_humidity_2m_mean', 'rain_sum']
+threshold_shades = {
+    'temperature_2m_min': [(18, 100)],
+    'temperature_2m_max': [(0, 35)],
+    'relative_humidity_2m_mean': [(60, 100)]
+}
 
-# Dengue Cases
-fig.add_trace(go.Scatter(
-    x=filtered_df['week_start_date'],
-    y=filtered_df['dengue_cases'],
-    name="Dengue Cases",
-    mode="lines+markers",
-    yaxis="y2",
-    line=dict(color='crimson')
-))
+# Set seaborn style
+sns.set_theme(style="whitegrid")
 
-# Climate Variables
-fig.add_trace(go.Scatter(x=filtered_df['week_start_date'], y=filtered_df['temperature_2m_max'], name="Max Temp", line=dict(color='orange')))
-fig.add_trace(go.Scatter(x=filtered_df['week_start_date'], y=filtered_df['temperature_2m_min'], name="Min Temp", line=dict(color='blue')))
-fig.add_trace(go.Scatter(x=filtered_df['week_start_date'], y=filtered_df['relative_humidity_2m_mean'], name="Humidity", line=dict(color='green')))
-fig.add_trace(go.Scatter(x=filtered_df['week_start_date'], y=filtered_df['rain_sum'], name="Rainfall", line=dict(color='purple')))
+# --- Generate One Plot Per Variable ---
+for var in plot_vars:
+    fig, ax = plt.subplots(figsize=(18, 3))
+    data = filtered.copy()
 
-# Threshold Highlights
-fig.add_hline(y=35, line_dash="dot", line_color="orange", annotation_text="Max Temp ≤ 35")
-fig.add_hline(y=18, line_dash="dot", line_color="blue", annotation_text="Min Temp ≥ 18")
-fig.add_hline(y=60, line_dash="dot", line_color="green", annotation_text="Humidity ≥ 60")
+    ax.plot(data['Week_Label'], data[var], marker='o', linestyle='-', color='steelblue', linewidth=1.5)
 
-# Highlight threshold weeks
-for _, row in filtered_df[filtered_df['meets_threshold']].iterrows():
-    fig.add_vline(x=row['week_start_date'], line_color='lightgreen', opacity=0.3, line_width=0.5)
+    if var in threshold_shades:
+        for ymin, ymax in threshold_shades[var]:
+            ax.axhspan(ymin, ymax, color='lightgreen', alpha=0.3)
 
-# Layout
-fig.update_layout(
-    title=f"📈 Weekly Trends for {dt_filter} / {sdt_filter}",
-    xaxis_title="Week Start Date",
-    yaxis=dict(title="Climate Variables"),
-    yaxis2=dict(title="Dengue Cases", overlaying='y', side='right'),
-    height=650,
-    legend=dict(orientation="h", y=1.1, x=0.5, xanchor='center')
-)
+    ax.set_xticks(range(len(data['Week_Label'])))
+    ax.set_xticklabels(data['Week_Label'], rotation=90, fontsize=9)
+    ax.grid(True, linestyle='--', linewidth=0.5, color='gray')
+    ax.set_title(var.replace("_", " ").title(), fontsize=14, weight='bold')
+    ax.set_ylabel("Value", fontsize=11)
+    ax.set_xlabel("Week", fontsize=11)
 
-# Display
-st.plotly_chart(fig, use_container_width=True)
+    st.pyplot(fig)
+
