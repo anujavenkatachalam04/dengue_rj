@@ -108,16 +108,26 @@ add_trace(4, 1, "relative_humidity_2m_mean", "Humidity", "green")
 add_trace(5, 1, "rain_sum", "Rainfall", "purple")
 
 # --- Update Layout ---
+# Update figure layout width to be wide (e.g., 3000 pixels)
 fig.update_layout(
-    height=1800,
-    title_text=f"Weekly Dengue and Climate Trends — {selected_dt} district / {selected_sdt} block",
+    width=3000,
+    height=1600,
+    title_text="Weekly Dengue and Climate Trends",
     showlegend=False,
-    margin=dict(t=80, b=60),
-    template=None,  # Avoids grey text from some themes
     plot_bgcolor="white",
     paper_bgcolor="white",
-    font=dict(color='black')  # All labels black
+    font=dict(color='black'),
+    margin=dict(t=60, b=60)
 )
+
+# Option 1: Basic scrolling container
+st.markdown(
+    """<div style="overflow-x: auto; white-space: nowrap;">""",
+    unsafe_allow_html=True
+)
+st.plotly_chart(fig, use_container_width=False)
+st.markdown("</div>", unsafe_allow_html=True)
+
 
 # --- Configure X-axis globally ---
 for i in range(1, 6):  # 5 subplots
