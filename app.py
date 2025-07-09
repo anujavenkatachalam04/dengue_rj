@@ -1,16 +1,17 @@
 import streamlit as st
 import pandas as pd
 import json
+import os
+import tempfile
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 from oauth2client.service_account import ServiceAccountCredentials
-import tempfile
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 st.set_page_config(page_title="Dengue Climate Dashboard", layout="wide")
 
-# --- Load Google Drive creds (if needed) ---
+# --- Load Google Drive credentials and file ---
 @st.cache_resource
 def load_drive():
     creds_json = st.secrets["gdrive_creds"]
@@ -28,27 +29,23 @@ def load_drive():
 
     return drive
 
-import os
-
-# Load Drive
-drive = load_drive()
-
-# Check if file exists, if not, download it
+# --- Download file if not exists ---
 csv_path = "time_series_dashboard.csv"
 if not os.path.exists(csv_path):
-    file_id = "1ad-PcGSpk6YoO-ZolodMWfvFq64kO-Z_"  # ← Your file ID
+    drive = load_drive()
+    file_id = "1ad-PcGSpk6YoO-ZolodMWfvFq64kO-Z_"
     downloaded = drive.CreateFile({'id': file_id})
     downloaded.GetContentFile(csv_path)
 
-# Now load the data
-@st.cache_data
+# --- Load CSV ---
 def load_data():
-    df = pd.read_csv("time_series_dashboard.csv", parse_dates=["week_start_date"])
+    df = pd.read_csv(csv_path, parse_dates=["week_start_date"])
     df['dtname'] = df['dtname'].astype(str).str.strip()
     df['sdtname'] = df['sdtname'].astype(str).str.strip()
     return df
 
 df = load_data()
+
 
 # --- Sidebar filters ---
 districts = ["All"] + sorted([d for d in df['dtname'].unique() if d != "All"])
