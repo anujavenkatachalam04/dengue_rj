@@ -4,25 +4,20 @@ import json
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 import plotly.graph_objects as go
+from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Dengue Climate Dashboard", layout="wide")
 
+
 @st.cache_resource
 def load_drive():
-    # Load the service account JSON string from Streamlit secrets
-    creds_dict = json.loads(st.secrets["gdrive_creds"])
-
-    # Create a credentials object using Google-auth
+    # Parse the JSON string stored in the secret
+    creds_json = st.secrets["gdrive_creds"]
+    creds_dict = json.loads(creds_json)
+    
+    # Create the credentials object
     credentials = Credentials.from_service_account_info(creds_dict)
-
-    # Set up PyDrive2 authentication manually
-    gauth = GoogleAuth()
-    gauth.credentials = credentials
-
-    # Build the drive instance
-    drive = GoogleDrive(gauth)
-    return drive
-
+    return credentials
 
 # --- SETUP: Load CSV from Google Drive using file ID ---
 @st.cache_data
