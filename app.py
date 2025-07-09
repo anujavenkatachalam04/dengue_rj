@@ -67,7 +67,7 @@ week_dates = filtered["week_start_date"]
 
 # --- Create Plotly Subplots ---
 fig = make_subplots(
-    rows=5, cols=1, shared_xaxes=True,
+    rows=5, cols=1, shared_xaxes=False,  # <<== CHANGED THIS
     vertical_spacing=0.03,
     subplot_titles=[
         "Dengue Cases",
@@ -113,22 +113,25 @@ fig.update_layout(
     title_text=f"Weekly Dengue and Climate Trends — {selected_dt} / {selected_sdt}",
     showlegend=False,
     margin=dict(t=80, b=60),
-    template="plotly_white",
+    template=None,  # Avoids grey text from some themes
     plot_bgcolor="white",
     paper_bgcolor="white",
-    font=dict(color='black')
+    font=dict(color='black')  # All labels black
 )
 
 # --- Configure X-axis globally ---
-fig.update_xaxes(
-    tickangle=0,
-    tickformat="%d-%b",  # Format as 01-Jan
-    tickfont=dict(size=11, color='black'),
-    showgrid=True,
-    gridcolor='lightgray',
-    title_text="Week Start Date",
-    dtick=604800000  # Force weekly ticks (in milliseconds)
-)
+for i in range(1, 6):  # 5 subplots
+    fig.update_xaxes(
+        row=i, col=1,
+        tickangle=0,
+        tickformat="%d-%b",  # Like 01-Jan
+        tickfont=dict(size=11, color='black'),
+        showgrid=True,
+        gridcolor='lightgray',
+        title_text="Week Start Date",
+        dtick=604800000  # One week in ms
+    )
+
 
 # --- Display Plot ---
 st.plotly_chart(fig, use_container_width=True)
