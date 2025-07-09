@@ -7,19 +7,24 @@ import plotly.graph_objects as go
 
 @st.cache_resource
 def load_drive():
-    # 🔐 Read secret JSON string and convert to dict
-    creds_str = st.secrets["gdrive_creds"]  # This is the full JSON string
+    import json
+    from pydrive2.auth import GoogleAuth
+
+    creds_str = st.secrets["gdrive_creds"]
     creds_dict = json.loads(creds_str)
 
-    # 📝 Write to temp file for PyDrive2 to read
     with open("temp_creds.json", "w") as f:
         json.dump(creds_dict, f)
 
-    # ✅ Authenticate with PyDrive2
     gauth = GoogleAuth()
-    gauth.LoadServiceConfigFile("temp_creds.json")
-    gauth.ServiceAuth()
-    return GoogleDrive(gauth)
+
+    # ✅ Corrected function
+    gauth.LoadCredentialsFile("temp_creds.json")
+    if gauth.credentials is None:
+        gauth.ServiceAuth()  # Authenticate with service account
+    drive = GoogleDrive(gauth)
+    return drive
+
 
 
 # --- SETUP: Load CSV from Google Drive using file ID ---
@@ -33,7 +38,7 @@ def load_data(file_id):
 
 # --- CONFIG ---
 st.set_page_config(page_title="Dengue Climate Dashboard", layout="wide")
-st.title("🦟 Dengue & Climate Time Series Dashboard")
+st.title("Dengue & Climate Time Series, Rajasthan (2024-2025")
 
 # --- Your Google Drive FILE ID here ---
 FILE_ID = "1ABCxYZ_myp5aZJmKJxY9g1d0JgEe1234" 
