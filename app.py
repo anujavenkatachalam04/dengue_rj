@@ -5,16 +5,17 @@ from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 import plotly.graph_objects as go
 from google.oauth2.service_account import Credentials
+from oauth2client.service_account import ServiceAccountCredentials
+import tempfile
+import matplotlib.pyplot as plt
+import seaborn as sns
+import matplotlib
+matplotlib.use("Agg")  # Non-interactive backend
 
 st.set_page_config(page_title="Dengue Climate Dashboard", layout="wide")
 
 @st.cache_resource
 def load_drive():
-    import tempfile
-    from pydrive2.auth import GoogleAuth
-    from pydrive2.drive import GoogleDrive
-    from oauth2client.service_account import ServiceAccountCredentials
-
     # Load credentials from secrets
     creds_json = st.secrets["gdrive_creds"]
     creds_dict = json.loads(creds_json)
