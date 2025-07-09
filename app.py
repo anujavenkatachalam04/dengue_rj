@@ -5,6 +5,8 @@ from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 import plotly.graph_objects as go
 
+st.set_page_config(page_title="Dengue Climate Dashboard", layout="wide")
+
 @st.cache_resource
 def load_drive():
     import json
@@ -37,7 +39,6 @@ def load_data(file_id):
     return df
 
 # --- CONFIG ---
-st.set_page_config(page_title="Dengue Climate Dashboard", layout="wide")
 st.title("Dengue & Climate Time Series, Rajasthan (2024-2025")
 
 # --- Your Google Drive FILE ID here ---
