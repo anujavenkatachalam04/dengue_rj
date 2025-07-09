@@ -115,16 +115,19 @@ fig.update_layout(
     margin=dict(t=80, b=60),
     template="plotly_white",
     plot_bgcolor="white",
-    paper_bgcolor="white"
+    paper_bgcolor="white",
+    font=dict(color='black')
 )
 
 # --- Configure X-axis globally ---
 fig.update_xaxes(
     tickangle=0,
-    tickformat="%d-%b",  # e.g., 01-Jan
-    tickfont=dict(size=10),
+    tickformat="%d-%b",  # Format as 01-Jan
+    tickfont=dict(size=11, color='black'),
     showgrid=True,
-    title_text="Week Start Date"
+    gridcolor='lightgray',
+    title_text="Week Start Date",
+    dtick=604800000  # Force weekly ticks (in milliseconds)
 )
 
 # --- Display Plot ---
