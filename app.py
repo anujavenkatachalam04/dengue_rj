@@ -5,25 +5,30 @@ from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 import plotly.graph_objects as go
 
-# --- SETUP: Authenticate Google Drive using Service Account ---
 @st.cache_resource
 def load_drive():
-    creds_dict = st.secrets["gdrive"]
+    # 🔐 Read secret JSON string and convert to dict
+    creds_str = st.secrets["gdrive_creds"]  # This is the full JSON string
+    creds_dict = json.loads(creds_str)
+
+    # 📝 Write to temp file for PyDrive2 to read
     with open("temp_creds.json", "w") as f:
         json.dump(creds_dict, f)
 
+    # ✅ Authenticate with PyDrive2
     gauth = GoogleAuth()
     gauth.LoadServiceConfigFile("temp_creds.json")
     gauth.ServiceAuth()
     return GoogleDrive(gauth)
+
 
 # --- SETUP: Load CSV from Google Drive using file ID ---
 @st.cache_data
 def load_data(file_id):
     drive = load_drive()
     downloaded = drive.CreateFile({'id': file_id})
-    downloaded.GetContentFile("data.csv")
-    df = pd.read_csv("data.csv", parse_dates=["week_start_date"])
+    downloaded.GetContentFile("time_series_dashboard.csv")
+    df = pd.read_csv("time_series_dashboard.csv", parse_dates=["week_start_date"])
     return df
 
 # --- CONFIG ---
