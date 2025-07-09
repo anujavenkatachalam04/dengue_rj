@@ -67,7 +67,7 @@ week_dates = filtered["week_start_date"]
 
 # --- Create Plotly Subplots ---
 fig = make_subplots(
-    rows=5, cols=1, shared_xaxes=False,  # <<== CHANGED THIS
+    rows=5, cols=1, shared_xaxes=False,
     vertical_spacing=0.03,
     subplot_titles=[
         "Dengue Cases",
@@ -94,6 +94,8 @@ def add_trace(row, col, y, name, color, is_integer=False):
         title=name,
         showgrid=True,
         zeroline=True,
+        gridcolor='lightgray',
+        tickfont=dict(color='black'),
     )
     if is_integer:
         axis_config["tickformat"] = ",d"
@@ -110,29 +112,29 @@ add_trace(5, 1, "rain_sum", "Rainfall", "purple")
 # --- Update Layout ---
 fig.update_layout(
     height=1800,
+    width=3000,
     title_text=f"Weekly Dengue and Climate Trends — {selected_dt} / {selected_sdt}",
     showlegend=False,
     margin=dict(t=80, b=60),
-    template=None,  # Avoids grey text from some themes
+    template=None,
     plot_bgcolor="white",
     paper_bgcolor="white",
-    font=dict(color='black')  # All labels black
+    font=dict(color='black')
 )
 
-
-# --- Configure X-axis globally ---
-for i in range(1, 6):  # 5 subplots
+# --- Configure X-axis per subplot ---
+for i in range(1, 6):  # For 5 subplots
     fig.update_xaxes(
         row=i, col=1,
-        tickangle=0,
-        tickformat="%d-%b",  # Like 01-Jan
+        tickangle=45,
+        tickformat="%d-%b",  # Format like 01-Jan
         tickfont=dict(size=11, color='black'),
+        ticks="outside",
         showgrid=True,
         gridcolor='lightgray',
-        # title_text="Week Start Date",
-        dtick=604800000  # One week in ms
+        dtick=604800000,  # 7 days in milliseconds
+        showticklabels=True
     )
-
 
 # --- Display Plot ---
 st.plotly_chart(fig, use_container_width=True)
