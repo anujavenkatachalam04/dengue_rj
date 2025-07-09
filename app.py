@@ -1,84 +1,96 @@
 import streamlit as st
 import pandas as pd
+import json
+from pydrive2.auth import GoogleAuth
+from pydrive2.drive import GoogleDrive
 import plotly.graph_objects as go
 
-# --- Load Data ---
+# --- SETUP: Authenticate Google Drive using Service Account ---
+@st.cache_resource
+def load_drive():
+    creds_dict = st.secrets["gdrive"]
+    with open("temp_creds.json", "w") as f:
+        json.dump(creds_dict, f)
+
+    gauth = GoogleAuth()
+    gauth.LoadServiceConfigFile("temp_creds.json")
+    gauth.ServiceAuth()
+    return GoogleDrive(gauth)
+
+# --- SETUP: Load CSV from Google Drive using file ID ---
 @st.cache_data
-def load_data():
-    return pd.read_csv("time_series_dashboard_data.csv", parse_dates=['week_start_date'])
+def load_data(file_id):
+    drive = load_drive()
+    downloaded = drive.CreateFile({'id': file_id})
+    downloaded.GetContentFile("data.csv")
+    df = pd.read_csv("data.csv", parse_dates=["week_start_date"])
+    return df
 
-df = load_data()
+# --- CONFIG ---
+st.set_page_config(page_title="Dengue Climate Dashboard", layout="wide")
+st.title("🦟 Dengue & Climate Time Series Dashboard")
 
-# --- Unique district/subdistrict options ---
+# --- Your Google Drive FILE ID here ---
+FILE_ID = "your_file_id_here"  # Replace with actual file ID
+df = load_data(FILE_ID)
+
+# --- Sidebar Filters ---
 districts = ["All"] + sorted([d for d in df['dtname'].dropna().unique() if d != "All"])
+dt_filter = st.sidebar.selectbox("Select District (dtname):", districts)
 
-# --- Create 2 columns for side-by-side plots ---
-col1, col2 = st.columns(2)
+if dt_filter == "All":
+    sdt_filter = st.sidebar.selectbox("Select Sub-District (sdtname):", ["All"], disabled=True)
+else:
+    subdistricts = ["All"] + sorted([s for s in df[df['dtname'] == dt_filter]['sdtname'].dropna().unique() if s != "All"])
+    sdt_filter = st.sidebar.selectbox("Select Sub-District (sdtname):", subdistricts)
 
-def district_selector(col, label_suffix):
-    with col:
-        dt = st.selectbox(f"Select District {label_suffix}", districts, key=f"dt_{label_suffix}")
-        if dt == "All":
-            sdt = st.selectbox(f"Sub-District {label_suffix}", ["All"], disabled=True, key=f"sdt_{label_suffix}")
-        else:
-            subdistricts = ["All"] + sorted([s for s in df[df['dtname'] == dt]['sdtname'].dropna().unique() if s != "All"])
-            sdt = st.selectbox(f"Sub-District {label_suffix}", subdistricts, key=f"sdt_{label_suffix}")
-    return dt, sdt
+# --- Filter Data ---
+if dt_filter == "All" and sdt_filter == "All":
+    filtered_df = df.copy()
+elif sdt_filter == "All":
+    filtered_df = df[df['dtname'] == dt_filter]
+else:
+    filtered_df = df[(df['dtname'] == dt_filter) & (df['sdtname'] == sdt_filter)]
 
-# --- Filters for both plots ---
-dt1, sdt1 = district_selector(col1, "A")
-dt2, sdt2 = district_selector(col2, "B")
+filtered_df = filtered_df.sort_values("week_start_date")
 
-def filter_data(df, dt, sdt):
-    if dt == "All" and sdt == "All":
-        return df.copy()
-    elif dt != "All" and sdt == "All":
-        return df[df['dtname'] == dt]
-    else:
-        return df[(df['dtname'] == dt) & (df['sdtname'] == sdt)]
+# --- Plotting ---
+fig = go.Figure()
 
-df1 = filter_data(df, dt1, sdt1).sort_values("week_start_date")
-df2 = filter_data(df, dt2, sdt2).sort_values("week_start_date")
+# Dengue Cases
+fig.add_trace(go.Scatter(
+    x=filtered_df['week_start_date'],
+    y=filtered_df['dengue_cases'],
+    name="Dengue Cases",
+    mode="lines+markers",
+    yaxis="y2",
+    line=dict(color='crimson')
+))
 
-def plot_ts(data, title):
-    fig = go.Figure()
+# Climate Variables
+fig.add_trace(go.Scatter(x=filtered_df['week_start_date'], y=filtered_df['temperature_2m_max'], name="Max Temp", line=dict(color='orange')))
+fig.add_trace(go.Scatter(x=filtered_df['week_start_date'], y=filtered_df['temperature_2m_min'], name="Min Temp", line=dict(color='blue')))
+fig.add_trace(go.Scatter(x=filtered_df['week_start_date'], y=filtered_df['relative_humidity_2m_mean'], name="Humidity", line=dict(color='green')))
+fig.add_trace(go.Scatter(x=filtered_df['week_start_date'], y=filtered_df['rain_sum'], name="Rainfall", line=dict(color='purple')))
 
-    # Dengue cases on secondary axis
-    fig.add_trace(go.Scatter(
-        x=data['week_start_date'], y=data['dengue_cases'],
-        name='Dengue Cases', yaxis='y2',
-        mode='lines+markers', line=dict(color='crimson')
-    ))
+# Threshold Highlights
+fig.add_hline(y=35, line_dash="dot", line_color="orange", annotation_text="Max Temp ≤ 35")
+fig.add_hline(y=18, line_dash="dot", line_color="blue", annotation_text="Min Temp ≥ 18")
+fig.add_hline(y=60, line_dash="dot", line_color="green", annotation_text="Humidity ≥ 60")
 
-    # Climate variables
-    fig.add_trace(go.Scatter(x=data['week_start_date'], y=data['temperature_2m_max'], name='Max Temp', line=dict(color='orange')))
-    fig.add_trace(go.Scatter(x=data['week_start_date'], y=data['temperature_2m_min'], name='Min Temp', line=dict(color='blue')))
-    fig.add_trace(go.Scatter(x=data['week_start_date'], y=data['relative_humidity_2m_mean'], name='Humidity', line=dict(color='green')))
-    fig.add_trace(go.Scatter(x=data['week_start_date'], y=data['rain_sum'], name='Rainfall', line=dict(color='purple')))
+# Highlight threshold weeks
+for _, row in filtered_df[filtered_df['meets_threshold']].iterrows():
+    fig.add_vline(x=row['week_start_date'], line_color='lightgreen', opacity=0.3, line_width=0.5)
 
-    # Threshold lines
-    fig.add_hline(y=35, line_dash="dot", line_color="orange", annotation_text="Max Temp ≤ 35")
-    fig.add_hline(y=18, line_dash="dot", line_color="blue", annotation_text="Min Temp ≥ 18")
-    fig.add_hline(y=60, line_dash="dot", line_color="green", annotation_text="Humidity ≥ 60%")
+# Layout
+fig.update_layout(
+    title=f"📈 Weekly Trends for {dt_filter} / {sdt_filter}",
+    xaxis_title="Week Start Date",
+    yaxis=dict(title="Climate Variables"),
+    yaxis2=dict(title="Dengue Cases", overlaying='y', side='right'),
+    height=650,
+    legend=dict(orientation="h", y=1.1, x=0.5, xanchor='center')
+)
 
-    # Threshold week highlights (optional)
-    for _, row in data[data['meets_threshold']].iterrows():
-        fig.add_vline(x=row['week_start_date'], line_width=0.5, line_color='lightgreen', opacity=0.3)
-
-    # Layout
-    fig.update_layout(
-        title=title,
-        xaxis_title="Week Start Date",
-        yaxis=dict(title="Climate Variables"),
-        yaxis2=dict(title="Dengue Cases", overlaying='y', side='right', showgrid=False),
-        legend=dict(orientation="h", y=1.1, x=0.5, xanchor='center'),
-        height=600
-    )
-    return fig
-
-# --- Show plots ---
-with col1:
-    st.plotly_chart(plot_ts(df1, f"{dt1} / {sdt1}"), use_container_width=True)
-
-with col2:
-    st.plotly_chart(plot_ts(df2, f"{dt2} / {sdt2}"), use_container_width=True)
+# Display
+st.plotly_chart(fig, use_container_width=True)
