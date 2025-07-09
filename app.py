@@ -106,7 +106,27 @@ def add_trace(row, col, y, name, color, is_integer=False):
 add_trace(1, 1, "dengue_cases", "Dengue Cases", "crimson", is_integer=True)
 add_trace(2, 1, "temperature_2m_max", "Max Temp", "orange")
 add_trace(3, 1, "temperature_2m_min", "Min Temp", "blue")
-add_trace(4, 1, "relative_humidity_2m_mean", "Humidity", "green")
+# Humidity with fixed y-axis range from 0 to 100
+fig.add_trace(go.Scatter(
+    x=week_dates,
+    y=filtered["relative_humidity_2m_mean"],
+    name="Humidity",
+    mode="lines+markers",
+    marker=dict(size=4),
+    line=dict(color="green")
+), row=4, col=1)
+
+fig.update_layout({
+    f'yaxis4': dict(
+        title="Humidity",
+        showgrid=True,
+        zeroline=True,
+        gridcolor='lightgray',
+        tickfont=dict(color='black'),
+        range=[0, 100]  # Fix the axis range
+    )
+})
+
 add_trace(5, 1, "rain_sum", "Rainfall", "purple")
 
 # --- Update Layout ---
