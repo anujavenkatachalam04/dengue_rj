@@ -8,16 +8,29 @@ from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Dengue Climate Dashboard", layout="wide")
 
-
 @st.cache_resource
 def load_drive():
-    # Parse the JSON string stored in the secret
+    import tempfile
+    from pydrive2.auth import GoogleAuth
+    from pydrive2.drive import GoogleDrive
+
+    # Parse credentials from Streamlit secrets
     creds_json = st.secrets["gdrive_creds"]
     creds_dict = json.loads(creds_json)
-    
-    # Create the credentials object
-    credentials = Credentials.from_service_account_info(creds_dict)
-    return credentials
+
+    # Write creds to a temporary file (PyDrive2 requires a file path)
+    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp:
+        json.dump(creds_dict, temp)
+        temp.flush()
+
+        # Authenticate using service account
+        gauth = GoogleAuth()
+        gauth.LoadServiceConfigFile(temp.name)
+        gauth.ServiceAuth()
+        drive = GoogleDrive(gauth)
+
+    return drive
+
 
 # --- SETUP: Load CSV from Google Drive using file ID ---
 @st.cache_data
@@ -29,7 +42,7 @@ def load_data(file_id):
     return df
 
 # --- CONFIG ---
-st.title("Dengue & Climate Time Series, Rajasthan (2024-2025")
+st.title("Dengue & Climate Time Series, Rajasthan (2024-2025)")
 
 # --- Your Google Drive FILE ID here ---
 FILE_ID = "1ABCxYZ_myp5aZJmKJxY9g1d0JgEe1234" 
