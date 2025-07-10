@@ -96,13 +96,16 @@ def add_trace(row, col, y, name, color, is_integer=False, tickformat=None):
 
     axis_name = f'yaxis{"" if row == 1 else row}'
     axis_config = dict(
-        title=name,
-        titlefont=dict(size=12, color='black'),   # Title font size
+        title=dict(
+            text=name,
+            font=dict(size=12, color='black')
+        ),
         showgrid=True,
         zeroline=True,
         gridcolor='lightgray',
-        tickfont=dict(size=12, color='black')     # Tick font size
+        tickfont=dict(size=12, color='black'),
     )
+
     if is_integer:
         axis_config["tickformat"] = ",d"
     elif tickformat:
@@ -156,10 +159,14 @@ fig.add_trace(go.Scatter(
     line=dict(color="green")
 ), row=4, col=1)
 
+
+
 fig.update_layout({
     f'yaxis4': dict(
-        title="Mean Relative Humidity (%) (Weekly Mean)",
-        titlefont=dict(size=12, color='black'),
+        title=dict(
+            text="Mean Relative Humidity (%) (Weekly Mean)",
+            font=dict(size=12, color='black')
+        ),
         showgrid=True,
         zeroline=True,
         gridcolor='lightgray',
@@ -167,6 +174,7 @@ fig.update_layout({
         range=[0, 100]
     )
 })
+
 
 highlight_humidity = filtered[filtered["relative_humidity_2m_mean"] >= 60]
 for dt in highlight_humidity["week_start_date"].drop_duplicates():
