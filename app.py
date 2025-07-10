@@ -95,8 +95,6 @@ def add_trace(row, col, y_data_col, trace_name, color, is_integer=False, tickfor
         line=dict(color=color)
     ), row=row, col=col)
 
-    # Update y-axis properties for the specific subplot
-    # The 'title' argument is excluded here as subplot_titles already sets it.
     fig.update_yaxes(
         row=row,
         col=col,
@@ -104,16 +102,15 @@ def add_trace(row, col, y_data_col, trace_name, color, is_integer=False, tickfor
         zeroline=True,
         gridcolor='lightgray',
         tickfont=dict(color='black', size=12),
-        range= [0, None]
+        range=yaxis_range if yaxis_range else [0, None]
     )
     if is_integer:
         fig.update_yaxes(tickformat=",d", row=row, col=col)
     elif tickformat:
         fig.update_yaxes(tickformat=tickformat, row=row, col=col)
 
-
 # --- Subplot 1: Dengue Cases ---
-add_trace(1, 1, "dengue_cases", "Dengue Cases (Weekly Sum)", "crimson", is_integer=True)
+add_trace(1, 1, "dengue_cases", "Dengue Cases (Weekly Sum)", "crimson", is_integer=True, yaxis_range=[0, None])
 
 highlight_weeks = filtered[filtered["meets_threshold"] == True]
 for dt in highlight_weeks["week_start_date"].drop_duplicates():
@@ -128,8 +125,7 @@ for dt in highlight_weeks["week_start_date"].drop_duplicates():
     )
 
 # --- Subplot 2: Max Temperature ---
-# This will now start at 0 due to the range=[0, None] default in add_trace
-add_trace(2, 1, "temperature_2m_max", "Max Temperature (°C) (Weekly Max)", "orange")
+add_trace(2, 1, "temperature_2m_max", "Max Temperature (°C) (Weekly Max)", "orange", yaxis_range=[0, None])
 highlight_max = filtered[filtered["temperature_2m_max"] <= 35]
 for dt in highlight_max["week_start_date"].drop_duplicates():
     fig.add_vrect(
@@ -139,8 +135,7 @@ for dt in highlight_max["week_start_date"].drop_duplicates():
     )
 
 # --- Subplot 3: Min Temperature ---
-# This will now start at 0 due to the range=[0, None] default in add_trace
-add_trace(3, 1, "temperature_2m_min", "Min Temperature (°C) (Weekly Min)", "blue")
+add_trace(3, 1, "temperature_2m_min", "Min Temperature (°C) (Weekly Min)", "blue", yaxis_range=[0, None])
 
 highlight_min = filtered[filtered["temperature_2m_min"] >= 18]
 for dt in highlight_min["week_start_date"].drop_duplicates():
@@ -151,7 +146,6 @@ for dt in highlight_min["week_start_date"].drop_duplicates():
     )
 
 # --- Subplot 4: Humidity ---
-# Explicitly setting range to [0, 100] for percentage data
 add_trace(4, 1, "relative_humidity_2m_mean", "Mean Relative Humidity (%) (Weekly Mean)", "green", yaxis_range=[0, 100])
 
 highlight_humidity = filtered[filtered["relative_humidity_2m_mean"] >= 60]
@@ -163,10 +157,9 @@ for dt in highlight_humidity["week_start_date"].drop_duplicates():
     )
 
 # --- Subplot 5: Rainfall ---
-add_trace(5, 1, "rain_sum", "Rainfall (mm) (Weekly Sum)", "purple")
+add_trace(5, 1, "rain_sum", "Rainfall (mm) (Weekly Sum)", "purple", yaxis_range=[0, None])
 
-# --- Set Y-axis label font size for all subplots ---
-# This loop iterates through all subplots to set the font size for their y-axis titles.
+# --- Y-axis label font size ---
 for i in range(1, 6):
     fig.update_yaxes(title_font=dict(size=12, color="black"), row=i, col=1)
 
@@ -188,11 +181,10 @@ fig.update_layout(
     template=None,
     plot_bgcolor="white",
     paper_bgcolor="white",
-    font=dict(color='black'),
-    xaxis=dict(range=[x_start, x_end])
+    font=dict(color='black')
 )
 
-# --- Configure X-axis for all subplots ---
+# --- X-axis config for all subplots with date range ---
 for i in range(1, 6):
     fig.update_xaxes(
         row=i, col=1,
@@ -202,7 +194,8 @@ for i in range(1, 6):
         ticks="outside",
         showgrid=True,
         gridcolor='lightgray',
-        dtick=604800000
+        dtick=604800000,
+        range=[x_start, x_end]
     )
 
 # --- Display Chart ---
