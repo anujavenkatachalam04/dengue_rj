@@ -151,6 +151,17 @@ for dt in highlight_min["week_start_date"].drop_duplicates():
         layer="below", row=3, col=1
     )
 
+fig.update_layout({
+    "yaxis3": dict(
+        title=dict(text="Min Temperature (°C) (Weekly Min)", font=dict(size=12, color='black')),
+        showgrid=True,
+        zeroline=True,
+        gridcolor='lightgray',
+        tickfont=dict(size=12, color='black'),
+        range=[0, None]  # Ensures it starts at 0
+    )
+})
+
 # --- Subplot 4: Humidity ---
 fig.add_trace(go.Scatter(
     x=week_dates,
