@@ -8,7 +8,7 @@ from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 from oauth2client.service_account import ServiceAccountCredentials
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots  # Important fix
+from plotly.subplots import make_subplots
 
 st.set_page_config(page_title="Dengue Climate Dashboard", layout="wide")
 
@@ -84,6 +84,7 @@ fig = make_subplots(
     ]
 )
 
+# --- Add Traces ---
 def add_trace(row, col, y, name, color, is_integer=False, tickformat=None):
     fig.add_trace(go.Scatter(
         x=week_dates,
@@ -96,25 +97,18 @@ def add_trace(row, col, y, name, color, is_integer=False, tickformat=None):
 
     axis_name = f'yaxis{"" if row == 1 else row}'
     axis_config = dict(
-        title=dict(
-            text=name,
-            font=dict(size=12, color='black')
-        ),
+        title=name,
         showgrid=True,
         zeroline=True,
         gridcolor='lightgray',
-        tickfont=dict(size=12, color='black'),
-        range=[0, None]  # Start from 0, auto upper bound
+        tickfont=dict(color='black'),
     )
-
-
     if is_integer:
         axis_config["tickformat"] = ",d"
     elif tickformat:
         axis_config["tickformat"] = tickformat
 
     fig.update_layout({axis_name: axis_config})
-
 
 # --- Subplot 1: Dengue Cases ---
 add_trace(1, 1, "dengue_cases", "Dengue Cases (Weekly Sum)", "crimson", is_integer=True)
@@ -151,19 +145,17 @@ for dt in highlight_min["week_start_date"].drop_duplicates():
         layer="below", row=3, col=1
     )
 
+# Make y-axis start from 0 for min temp
 fig.update_layout({
     "yaxis3": dict(
-        title=dict(text="Min Temperature (°C) (Weekly Min)", font=dict(size=12, color='black')),
+        title="Min Temperature (°C) (Weekly Min)",
         showgrid=True,
         zeroline=True,
         gridcolor='lightgray',
-        tickfont=dict(size=12, color='black'),
-        range=[0, None]  # Ensures it starts at 0
+        tickfont=dict(color='black'),
+        range=[0, None]
     )
 })
-
-# After adding the trace to subplot 3
-fig.update_yaxes(range=[0, None], row=3, col=1)
 
 # --- Subplot 4: Humidity ---
 fig.add_trace(go.Scatter(
@@ -175,23 +167,16 @@ fig.add_trace(go.Scatter(
     line=dict(color="green")
 ), row=4, col=1)
 
-
-
 fig.update_layout({
-    f'yaxis4': dict(
-        title=dict(
-            text="Mean Relative Humidity (%) (Weekly Mean)",
-            font=dict(size=12, color='black')
-        ),
+    "yaxis4": dict(
+        title="Mean Relative Humidity (%) (Weekly Mean)",
         showgrid=True,
         zeroline=True,
         gridcolor='lightgray',
-        tickfont=dict(size=12, color='black'),
+        tickfont=dict(color='black'),
         range=[0, 100]
     )
 })
-
-
 
 highlight_humidity = filtered[filtered["relative_humidity_2m_mean"] >= 60]
 for dt in highlight_humidity["week_start_date"].drop_duplicates():
@@ -201,7 +186,7 @@ for dt in highlight_humidity["week_start_date"].drop_duplicates():
         layer="below", row=4, col=1
     )
 
-# --- Subplot 5: Rainfall (Fix tickformat) ---
+# --- Subplot 5: Rainfall ---
 add_trace(5, 1, "rain_sum", "Rainfall (mm) (Weekly Sum)", "purple")
 
 # --- Add X-axis label for last chart ---
@@ -209,7 +194,7 @@ fig.update_xaxes(
     row=5, col=1,
     title_text="Week Start Date",
     title_font=dict(size=12),
-    title_standoff=30  # Avoid overlap
+    title_standoff=30
 )
 
 # --- Layout ---
