@@ -137,6 +137,7 @@ for dt in highlight_max["week_start_date"].drop_duplicates():
     )
 
 # --- Subplot 3: Min Temperature ---
+# --- Subplot 3: Min Temperature ---
 fig.add_trace(go.Scatter(
     x=week_dates,
     y=filtered["temperature_2m_min"],
@@ -154,17 +155,15 @@ for dt in highlight_min["week_start_date"].drop_duplicates():
         layer="below", row=3, col=1
     )
 
-fig.update_layout({
-    "yaxis3": dict(
-        title="Min Temperature (°C) (Weekly Min)",
-        showgrid=True,
-        zeroline=True,
-        gridcolor='lightgray',
-        tickfont=dict(color='black', size=12),
-        range=[0, None]  # Force Y-axis to start at 0
-    )
-})
-
+fig.update_yaxes(
+    row=3, col=1,
+    range=[0, None],  # Force y-axis to start from 0
+    tickfont=dict(size=12, color="black"),
+    title_text="Min Temperature (°C) (Weekly Min)",
+    showgrid=True,
+    zeroline=True,
+    gridcolor='lightgray'
+)
 
 # --- Subplot 4: Humidity ---
 fig.add_trace(go.Scatter(
