@@ -74,7 +74,7 @@ x_end = valid_dates.max()
 # --- Create Plotly Subplots ---
 fig = make_subplots(
     rows=5, cols=1, shared_xaxes=False,
-    vertical_spacing=0.05,
+    vertical_spacing=0.08,  # Increased spacing
     subplot_titles=[
         "Dengue Cases",
         "Max Temperature (°C)",
@@ -108,12 +108,51 @@ def add_trace(row, col, y, name, color, is_integer=False):
 
     fig.update_layout({axis_name: axis_config})
 
-# Add each subplot
+# --- Subplot 1: Dengue Cases ---
 add_trace(1, 1, "dengue_cases", "Dengue Cases (Weekly Sum)", "crimson", is_integer=True)
-add_trace(2, 1, "temperature_2m_max", "Max Temperature (°C) (Weekly Max)", "orange")
-add_trace(3, 1, "temperature_2m_min", "Min Temperature (°C) (Weekly Min)", "blue")
 
-# Humidity with fixed range
+# Highlight meets_threshold only for Dengue chart
+highlight_weeks = filtered[filtered["meets_threshold"] == True]
+for dt in highlight_weeks["week_start_date"].drop_duplicates():
+    fig.add_vrect(
+        x0=dt,
+        x1=dt + timedelta(days=6),
+        fillcolor="red",
+        opacity=0.15,
+        line_width=0,
+        layer="below",
+        row=1, col=1
+    )
+
+# --- Subplot 2: Max Temp ---
+add_trace(2, 1, "temperature_2m_max", "Max Temperature (°C) (Weekly Max)", "orange")
+highlight_max = filtered[filtered["temperature_2m_max"] <= 35]
+for dt in highlight_max["week_start_date"].drop_duplicates():
+    fig.add_vrect(
+        x0=dt,
+        x1=dt + timedelta(days=6),
+        fillcolor="orange",
+        opacity=0.1,
+        line_width=0,
+        layer="below",
+        row=2, col=1
+    )
+
+# --- Subplot 3: Min Temp ---
+add_trace(3, 1, "temperature_2m_min", "Min Temperature (°C) (Weekly Min)", "blue")
+highlight_min = filtered[filtered["temperature_2m_min"] >= 18]
+for dt in highlight_min["week_start_date"].drop_duplicates():
+    fig.add_vrect(
+        x0=dt,
+        x1=dt + timedelta(days=6),
+        fillcolor="blue",
+        opacity=0.1,
+        line_width=0,
+        layer="below",
+        row=3, col=1
+    )
+
+# --- Subplot 4: Humidity ---
 fig.add_trace(go.Scatter(
     x=week_dates,
     y=filtered["relative_humidity_2m_mean"],
@@ -134,23 +173,30 @@ fig.update_layout({
     )
 })
 
-add_trace(5, 1, "rain_sum", "Rainfall (mm) (Weekly Sum)", "purple")
-
-# --- Highlight meets_threshold weeks ---
-highlight_weeks = filtered[filtered["meets_threshold"] == True]
-for dt in highlight_weeks["week_start_date"].drop_duplicates():
+highlight_humidity = filtered[filtered["relative_humidity_2m_mean"] >= 60]
+for dt in highlight_humidity["week_start_date"].drop_duplicates():
     fig.add_vrect(
         x0=dt,
         x1=dt + timedelta(days=6),
-        fillcolor="red",
-        opacity=0.15,
+        fillcolor="green",
+        opacity=0.1,
         line_width=0,
-        layer="below"
+        layer="below",
+        row=4, col=1
     )
 
-# --- Update Layout ---
+# --- Subplot 5: Rainfall ---
+add_trace(5, 1, "rain_sum", "Rainfall (mm) (Weekly Sum)", "purple")
+
+# --- Add X-axis label for the last chart ---
+fig.update_xaxes(
+    row=5, col=1,
+    title_text="Week Start Date"
+)
+
+# --- Layout Update ---
 fig.update_layout(
-    height=1800,
+    height=2200,  # Increased plot height
     width=3000,
     title_text=f"Weekly Dengue and Climate Trends — {selected_dt} district(s) / {selected_sdt} block(s)",
     showlegend=False,
