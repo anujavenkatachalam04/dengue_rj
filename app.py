@@ -218,7 +218,7 @@ st.plotly_chart(fig, use_container_width=True)
 # --- Threshold Notes ---
 st.markdown("""
 **Note on Thresholds**:  
-- **Dengue Cases**: Weeks shaded **red** indicate `meets_threshold = True`.  
+- **Dengue Cases**: Weeks shaded **red** indicate that Max Temperature (°C) ≤ 35°C AND Min Temperature (°C) ≥ 18°C OR Mean Relative Humidity (%) ≥ 60%.
 - **Max Temperature (°C)**: Weeks shaded **orange** indicate values ≤ 35°C.  
 - **Min Temperature (°C)**: Weeks shaded **blue** indicate values ≥ 18°C.  
 - **Mean Relative Humidity (%)**: Weeks shaded **green** indicate values ≥ 60%.
