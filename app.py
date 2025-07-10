@@ -213,7 +213,7 @@ for i in range(1, 6):
     fig.update_xaxes(
         row=i, col=1,
         tickangle=-45,
-        tickformat="%d-%b",
+        tickformat="%d-%b-%y",
         tickfont=dict(size=10, color='black'),
         ticks="outside",
         showgrid=True,
