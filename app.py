@@ -66,24 +66,26 @@ week_dates = filtered["week_start_date"]
 x_start = filtered["week_start_date"].min()
 x_end = filtered["week_start_date"].max()
 
+# --- Extract lags for selected location ---
 trigger = filtered["trigger_date"].iloc[0]
-lag_all = filtered["lag_all"].iloc[0]
-lag_min = filtered["lag_min"].iloc[0]
-lag_max = filtered["lag_max"].iloc[0]
-lag_hum = filtered["lag_hum"].iloc[0]
+lag_all = int(filtered["lag_all"].iloc[0]) if pd.notna(filtered["lag_all"].iloc[0]) else '–'
+lag_min = int(filtered["lag_min"].iloc[0]) if pd.notna(filtered["lag_min"].iloc[0]) else '–'
+lag_max = int(filtered["lag_max"].iloc[0]) if pd.notna(filtered["lag_max"].iloc[0]) else '–'
+lag_hum = int(filtered["lag_hum"].iloc[0]) if pd.notna(filtered["lag_hum"].iloc[0]) else '–'
 
+# --- Create Subplots with lag info in titles ---
+subplot_titles = [
+    f"Dengue Cases (Lag: {lag_all} week{'s' if lag_all != 1 else ''})",
+    f"Max Temperature (°C) (Lag: {lag_max} week{'s' if lag_max != 1 else ''})",
+    f"Min Temperature (°C) (Lag: {lag_min} week{'s' if lag_min != 1 else ''})",
+    f"Mean Relative Humidity (%) (Lag: {lag_hum} week{'s' if lag_hum != 1 else ''})",
+    "Rainfall (mm)"
+]
 
-# --- Create Subplots ---
 fig = make_subplots(
     rows=5, cols=1, shared_xaxes=False,
     vertical_spacing=0.05,
-    subplot_titles=[
-        "Dengue Cases",
-        "Max Temperature (°C)",
-        "Min Temperature (°C)",
-        "Mean Relative Humidity (%)",
-        "Rainfall (mm)"
-    ]
+    subplot_titles=subplot_titles
 )
 
 # --- Add Traces ---
@@ -97,7 +99,7 @@ def add_trace(row, col, y_data_col, trace_name, color, highlight_cond=None, high
         line=dict(color=color)
     ), row=row, col=col)
 
-    # Set y-axis config for each subplot
+    # Set y-axis config
     fig.update_yaxes(
         title_text=trace_name,
         row=row,
@@ -110,6 +112,7 @@ def add_trace(row, col, y_data_col, trace_name, color, highlight_cond=None, high
         range=[0, None]
     )
 
+    # Highlight weeks
     if highlight_cond is not None and highlight_color:
         highlight_weeks = filtered[highlight_cond]
         for dt in highlight_weeks["week_start_date"].drop_duplicates():
@@ -138,33 +141,4 @@ for i in range(1, 6):
         tickformat="%d-%b-%y",
         tickfont=dict(size=10, color='black'),
         ticks="outside",
-        showgrid=True,
-        gridcolor='lightgray',
-        dtick=604800000,
-        range=[x_start, x_end]
-    )
-
-# --- Layout ---
-fig.update_layout(
-    height=2100,
-    width=3000,
-    title_text=f"Weekly Dengue and Climate Trends — Block: {selected_sdt}, District: {selected_dt}",
-    showlegend=False,
-    margin=dict(t=80, b=100),
-    template=None,
-    plot_bgcolor="white",
-    paper_bgcolor="white",
-    font=dict(color='black')
-)
-
-# --- Display Chart ---
-st.plotly_chart(fig, use_container_width=True)
-
-# --- Threshold Notes ---
-st.markdown("""
-**Note on Thresholds**:
-- **Dengue Cases**: Weeks shaded **red** indicate that Max Temperature (°C) ≤ 35°C AND Min Temperature (°C) ≥ 18°C OR Mean Relative Humidity (%) ≥ 60%.
-- **Max Temperature (°C)**: Weeks shaded **orange** indicate values ≤ 35°C.
-- **Min Temperature (°C)**: Weeks shaded **blue** indicate values ≥ 18°C.
-- **Mean Relative Humidity (%)**: Weeks shaded **green** indicate values ≥ 60%.
-""")
+        showgrid
