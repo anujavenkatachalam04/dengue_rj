@@ -102,7 +102,6 @@ def add_trace(row, col, y_data_col, trace_name, color, is_integer=False, tickfor
         zeroline=True,
         gridcolor='lightgray',
         tickfont=dict(color='black', size=12),
-        range=yaxis_range if yaxis_range else [0, None]
     )
     if is_integer:
         fig.update_yaxes(tickformat=",d", row=row, col=col)
