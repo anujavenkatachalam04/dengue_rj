@@ -51,11 +51,13 @@ def load_data():
 df = load_data()
 
 # --- Sidebar filters ---
-districts = ["All"] + sorted([d for d in df['dtname'].unique() if d != "All"])
-selected_dt = st.sidebar.selectbox("Select District", districts)
+districts = ["All district(s)"] + sorted([d for d in df['dtname'].unique() if d != "All"])
+selected_dt_raw = st.sidebar.selectbox("Select District", districts)
+selected_dt = selected_dt_raw.replace("All district(s)", "All")
 
-subdistricts = ["All"] + sorted([s for s in df[df['dtname'] == selected_dt]['sdtname'].unique() if s != "All"])
-selected_sdt = st.sidebar.selectbox("Select Block", subdistricts)
+subdistricts = ["All subdistrict(s)"] + sorted([s for s in df[df['dtname'] == selected_dt]['sdtname'].unique() if s != "All"])
+selected_sdt_raw = st.sidebar.selectbox("Select Subdistrict", subdistricts)
+selected_sdt = selected_sdt_raw.replace("All subdistrict(s)", "All")
 
 # --- Filter based on selection ---
 filtered = df[(df['dtname'] == selected_dt) & (df['sdtname'] == selected_sdt)]
@@ -64,20 +66,23 @@ if filtered.empty:
     st.warning("No data available for this selection.")
     st.stop()
 
-# --- Sort by date and prepare x-axis labels ---
+# --- Sort by date and compute limits ---
 filtered = filtered.sort_values("week_start_date")
 week_dates = filtered["week_start_date"]
+valid_dates = filtered[filtered["dengue_cases"].notna()]["week_start_date"]
+x_start = valid_dates.min()
+x_end = valid_dates.max()
 
 # --- Create Plotly Subplots ---
 fig = make_subplots(
     rows=5, cols=1, shared_xaxes=False,
     vertical_spacing=0.05,
     subplot_titles=[
-        "Dengue Cases",
-        "Max Temperature (°C)",
-        "Min Temperature (°C)",
-        "Relative Humidity (%)",
-        "Rainfall (mm)"
+        "Dengue Cases (Total Weekly)",
+        "Max Temperature (°C) (Max Weekly)",
+        "Min Temperature (°C) (Min Weekly)",
+        "Mean Relative Humidity (%) (Mean Weekly)",
+        "Rainfall (mm) (Total Weekly)"
     ]
 )
 
@@ -105,16 +110,14 @@ def add_trace(row, col, y, name, color, is_integer=False):
 
     fig.update_layout({axis_name: axis_config})
 
-# Add each subplot
-add_trace(1, 1, "dengue_cases", "Dengue Cases", "crimson", is_integer=True)
-add_trace(2, 1, "temperature_2m_max", "Max Temp", "orange")
-add_trace(3, 1, "temperature_2m_min", "Min Temp", "blue")
+add_trace(1, 1, "dengue_cases", "Dengue Cases (Total Weekly)", "crimson", is_integer=True)
+add_trace(2, 1, "temperature_2m_max", "Max Temperature (°C) (Max Weekly)", "orange")
+add_trace(3, 1, "temperature_2m_min", "Min Temperature (°C) (Min Weekly)", "blue")
 
-# Humidity (y-axis fixed)
 fig.add_trace(go.Scatter(
     x=week_dates,
     y=filtered["relative_humidity_2m_mean"],
-    name="Humidity",
+    name="Mean Relative Humidity (%) (Mean Weekly)",
     mode="lines+markers",
     marker=dict(size=4),
     line=dict(color="green")
@@ -122,7 +125,7 @@ fig.add_trace(go.Scatter(
 
 fig.update_layout({
     f'yaxis4': dict(
-        title="Humidity",
+        title="Mean Relative Humidity (%) (Mean Weekly)",
         showgrid=True,
         zeroline=True,
         gridcolor='lightgray',
@@ -131,7 +134,7 @@ fig.update_layout({
     )
 })
 
-add_trace(5, 1, "rain_sum", "Rainfall", "purple")
+add_trace(5, 1, "rain_sum", "Rainfall (mm) (Total Weekly)", "purple")
 
 # --- Highlight meets_threshold weeks with shaded regions ---
 highlight_weeks = filtered[filtered["meets_threshold"] == True]
@@ -149,13 +152,14 @@ for dt in highlight_weeks["week_start_date"].drop_duplicates():
 fig.update_layout(
     height=1800,
     width=3000,
-    title_text=f"Weekly Dengue and Climate Trends — {selected_dt} / {selected_sdt}",
+    title_text=f"{selected_sdt_raw} subdistrict, {selected_dt_raw} district",
     showlegend=False,
     margin=dict(t=80, b=60),
     template=None,
     plot_bgcolor="white",
     paper_bgcolor="white",
-    font=dict(color='black')
+    font=dict(color='black'),
+    xaxis=dict(range=[x_start, x_end]),
 )
 
 # --- Configure X-axis per subplot ---
@@ -163,7 +167,7 @@ for i in range(1, 6):
     fig.update_xaxes(
         row=i, col=1,
         tickangle=-45,
-        tickformat="%d-%b-%y",  # e.g., 01-Jan-24
+        tickformat="%d-%m",  # show dd-mm only
         tickfont=dict(size=11, color='black'),
         ticks="outside",
         showgrid=True,
@@ -171,6 +175,19 @@ for i in range(1, 6):
         dtick=604800000,
         showticklabels=True
     )
+
+# --- Add top (secondary) x-axis for year only ---
+fig.update_layout(
+    xaxis2=dict(
+        overlaying='x',
+        side='top',
+        tickformat="%Y",
+        tickangle=0,
+        dtick="M1",
+        showgrid=False,
+        tickfont=dict(size=12, color="black")
+    )
+)
 
 # --- Display Plot ---
 st.plotly_chart(fig, use_container_width=True)
