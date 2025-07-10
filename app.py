@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import json
@@ -96,9 +95,8 @@ def add_trace(row, col, y, name, color, is_integer=False, tickformat=None, yaxis
         line=dict(color=color)
     ), row=row, col=col)
 
-    axis_name = f'yaxis{"" if row == 1 else row}'
-    axis_config = dict(
-        title=name,
+    # Update y-axis properties for the specific subplot
+    yaxis_update_dict = dict(
         showgrid=True,
         zeroline=True,
         gridcolor='lightgray',
@@ -107,11 +105,12 @@ def add_trace(row, col, y, name, color, is_integer=False, tickformat=None, yaxis
         range=yaxis_range if yaxis_range is not None else [0, None] # Ensure y-axis starts at 0
     )
     if is_integer:
-        axis_config["tickformat"] = ",d"
+        yaxis_update_dict["tickformat"] = ",d"
     elif tickformat:
-        axis_config["tickformat"] = tickformat
+        yaxis_update_dict["tickformat"] = tickformat
 
-    fig.update_layout({axis_name: axis_config})
+    fig.update_yaxes(yaxis_update_dict, row=row, col=col)
+
 
 # --- Subplot 1: Dengue Cases ---
 add_trace(1, 1, "dengue_cases", "Dengue Cases (Weekly Sum)", "crimson", is_integer=True)
@@ -150,6 +149,7 @@ for dt in highlight_min["week_start_date"].drop_duplicates():
     )
 
 # --- Subplot 4: Humidity ---
+# Note: For humidity, we explicitly set the range to [0, 100] as it's a percentage.
 add_trace(4, 1, "relative_humidity_2m_mean", "Mean Relative Humidity (%) (Weekly Mean)", "green", yaxis_range=[0, 100])
 
 highlight_humidity = filtered[filtered["relative_humidity_2m_mean"] >= 60]
