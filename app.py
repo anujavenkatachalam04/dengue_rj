@@ -102,6 +102,8 @@ def add_trace(row, col, y_data_col, trace_name, color, is_integer=False, tickfor
         zeroline=True,
         gridcolor='lightgray',
         tickfont=dict(color='black', size=12),
+        range=[0, None]
+
     )
     if is_integer:
         fig.update_yaxes(tickformat=",d", row=row, col=col)
@@ -109,7 +111,7 @@ def add_trace(row, col, y_data_col, trace_name, color, is_integer=False, tickfor
         fig.update_yaxes(tickformat=tickformat, row=row, col=col)
 
 # --- Subplot 1: Dengue Cases ---
-add_trace(1, 1, "dengue_cases", "Dengue Cases (Weekly Sum)", "crimson", is_integer=True, yaxis_range=[0, None])
+add_trace(1, 1, "dengue_cases", "Dengue Cases (Weekly Sum)", "crimson", is_integer=True)
 
 highlight_weeks = filtered[filtered["meets_threshold"] == True]
 for dt in highlight_weeks["week_start_date"].drop_duplicates():
@@ -124,7 +126,7 @@ for dt in highlight_weeks["week_start_date"].drop_duplicates():
     )
 
 # --- Subplot 2: Max Temperature ---
-add_trace(2, 1, "temperature_2m_max", "Max Temperature (°C) (Weekly Max)", "orange", yaxis_range=[0, None])
+add_trace(2, 1, "temperature_2m_max", "Max Temperature (°C) (Weekly Max)", "orange")
 highlight_max = filtered[filtered["temperature_2m_max"] <= 35]
 for dt in highlight_max["week_start_date"].drop_duplicates():
     fig.add_vrect(
@@ -134,7 +136,7 @@ for dt in highlight_max["week_start_date"].drop_duplicates():
     )
 
 # --- Subplot 3: Min Temperature ---
-add_trace(3, 1, "temperature_2m_min", "Min Temperature (°C) (Weekly Min)", "blue", yaxis_range=[0, None])
+add_trace(3, 1, "temperature_2m_min", "Min Temperature (°C) (Weekly Min)", "blue")
 
 highlight_min = filtered[filtered["temperature_2m_min"] >= 18]
 for dt in highlight_min["week_start_date"].drop_duplicates():
@@ -145,7 +147,7 @@ for dt in highlight_min["week_start_date"].drop_duplicates():
     )
 
 # --- Subplot 4: Humidity ---
-add_trace(4, 1, "relative_humidity_2m_mean", "Mean Relative Humidity (%) (Weekly Mean)", "green", yaxis_range=[0, 100])
+add_trace(4, 1, "relative_humidity_2m_mean", "Mean Relative Humidity (%) (Weekly Mean)", "green")
 
 highlight_humidity = filtered[filtered["relative_humidity_2m_mean"] >= 60]
 for dt in highlight_humidity["week_start_date"].drop_duplicates():
@@ -156,7 +158,7 @@ for dt in highlight_humidity["week_start_date"].drop_duplicates():
     )
 
 # --- Subplot 5: Rainfall ---
-add_trace(5, 1, "rain_sum", "Rainfall (mm) (Weekly Sum)", "purple", yaxis_range=[0, None])
+add_trace(5, 1, "rain_sum", "Rainfall (mm) (Weekly Sum)", "purple")
 
 # --- Y-axis label font size ---
 for i in range(1, 6):
