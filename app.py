@@ -84,7 +84,6 @@ fig = make_subplots(
     ]
 )
 
-# --- Add Traces ---
 def add_trace(row, col, y, name, color, is_integer=False, tickformat=None):
     fig.add_trace(go.Scatter(
         x=week_dates,
@@ -98,10 +97,11 @@ def add_trace(row, col, y, name, color, is_integer=False, tickformat=None):
     axis_name = f'yaxis{"" if row == 1 else row}'
     axis_config = dict(
         title=name,
+        titlefont=dict(size=12, color='black'),   # Title font size
         showgrid=True,
         zeroline=True,
         gridcolor='lightgray',
-        tickfont=dict(color='black'),
+        tickfont=dict(size=12, color='black')     # Tick font size
     )
     if is_integer:
         axis_config["tickformat"] = ",d"
@@ -109,6 +109,7 @@ def add_trace(row, col, y, name, color, is_integer=False, tickformat=None):
         axis_config["tickformat"] = tickformat
 
     fig.update_layout({axis_name: axis_config})
+
 
 # --- Subplot 1: Dengue Cases ---
 add_trace(1, 1, "dengue_cases", "Dengue Cases (Weekly Sum)", "crimson", is_integer=True)
@@ -158,10 +159,11 @@ fig.add_trace(go.Scatter(
 fig.update_layout({
     f'yaxis4': dict(
         title="Mean Relative Humidity (%) (Weekly Mean)",
+        titlefont=dict(size=12, color='black'),
         showgrid=True,
         zeroline=True,
         gridcolor='lightgray',
-        tickfont=dict(color='black'),
+        tickfont=dict(size=12, color='black'),
         range=[0, 100]
     )
 })
