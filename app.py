@@ -17,7 +17,6 @@ st.set_page_config(page_title="Dengue Climate Dashboard", layout="wide")
 def load_drive():
     creds_json = st.secrets["gdrive_creds"]
     creds_dict = json.loads(creds_json)
-
     with tempfile.NamedTemporaryFile(mode='w+', delete=False) as tmp:
         json.dump(creds_dict, tmp)
         tmp.flush()
@@ -27,7 +26,6 @@ def load_drive():
             scopes=["https://www.googleapis.com/auth/drive"]
         )
         drive = GoogleDrive(gauth)
-
     return drive
 
 # --- Download file if not exists ---
@@ -59,21 +57,18 @@ selected_sdt = st.sidebar.selectbox("Select Block", subdistricts)
 
 # --- Filter based on selection ---
 filtered = df[(df['dtname'] == selected_dt) & (df['sdtname'] == selected_sdt)]
-
 if filtered.empty:
     st.warning("No data available for this selection.")
     st.stop()
 
-# --- Sort by date and prepare x-axis labels ---
 filtered = filtered.sort_values("week_start_date")
 week_dates = filtered["week_start_date"]
-valid_dates = filtered[filtered["dengue_cases"].notna()]["week_start_date"]
-x_start = valid_dates.min()
-x_end = valid_dates.max()
+x_start = filtered["week_start_date"].min()
+x_end = filtered["week_start_date"].max()
 
-# --- Create Plotly Subplots ---
+# --- Create Subplots ---
 fig = make_subplots(
-    rows=5, cols=1, shared_xaxes=False,
+    rows=5, cols=1, shared_xaxes=True,
     vertical_spacing=0.05,
     subplot_titles=[
         "Dengue Cases",
@@ -85,7 +80,7 @@ fig = make_subplots(
 )
 
 # --- Add Traces ---
-def add_trace(row, col, y_data_col, trace_name, color, is_integer=False, tickformat=None, yaxis_range=None):
+def add_trace(row, col, y_data_col, trace_name, color, highlight_cond=None, highlight_color=None):
     fig.add_trace(go.Scatter(
         x=week_dates,
         y=filtered[y_data_col],
@@ -95,82 +90,52 @@ def add_trace(row, col, y_data_col, trace_name, color, is_integer=False, tickfor
         line=dict(color=color)
     ), row=row, col=col)
 
+    # Set y-axis config for each subplot
     fig.update_yaxes(
+        title_text=trace_name,
         row=row,
         col=col,
         showgrid=True,
         zeroline=True,
         gridcolor='lightgray',
-        tickfont=dict(color='black', size=12),
+        tickfont=dict(size=12, color='black'),
+        title_font=dict(size=12, color="black"),
         range=[0, None]
-
-    )
-    if is_integer:
-        fig.update_yaxes(tickformat=",d", row=row, col=col)
-    elif tickformat:
-        fig.update_yaxes(tickformat=tickformat, row=row, col=col)
-
-# --- Subplot 1: Dengue Cases ---
-add_trace(1, 1, "dengue_cases", "Dengue Cases (Weekly Sum)", "crimson", is_integer=True)
-
-highlight_weeks = filtered[filtered["meets_threshold"] == True]
-for dt in highlight_weeks["week_start_date"].drop_duplicates():
-    fig.add_vrect(
-        x0=dt,
-        x1=dt + timedelta(days=6),
-        fillcolor="red",
-        opacity=0.15,
-        line_width=0,
-        layer="below",
-        row=1, col=1
     )
 
-# --- Subplot 2: Max Temperature ---
-add_trace(2, 1, "temperature_2m_max", "Max Temperature (°C) (Weekly Max)", "orange")
-highlight_max = filtered[filtered["temperature_2m_max"] <= 35]
-for dt in highlight_max["week_start_date"].drop_duplicates():
-    fig.add_vrect(
-        x0=dt, x1=dt + timedelta(days=6),
-        fillcolor="orange", opacity=0.1, line_width=0,
-        layer="below", row=2, col=1
-    )
+    if highlight_cond is not None and highlight_color:
+        highlight_weeks = filtered[highlight_cond]
+        for dt in highlight_weeks["week_start_date"].drop_duplicates():
+            fig.add_vrect(
+                x0=dt,
+                x1=dt + timedelta(days=6),
+                fillcolor=highlight_color,
+                opacity=0.1,
+                line_width=0,
+                layer="below",
+                row=row, col=col
+            )
 
-# --- Subplot 3: Min Temperature ---
-add_trace(3, 1, "temperature_2m_min", "Min Temperature (°C) (Weekly Min)", "blue")
-
-highlight_min = filtered[filtered["temperature_2m_min"] >= 18]
-for dt in highlight_min["week_start_date"].drop_duplicates():
-    fig.add_vrect(
-        x0=dt, x1=dt + timedelta(days=6),
-        fillcolor="blue", opacity=0.1, line_width=0,
-        layer="below", row=3, col=1
-    )
-
-# --- Subplot 4: Humidity ---
-add_trace(4, 1, "relative_humidity_2m_mean", "Mean Relative Humidity (%) (Weekly Mean)", "green")
-
-highlight_humidity = filtered[filtered["relative_humidity_2m_mean"] >= 60]
-for dt in highlight_humidity["week_start_date"].drop_duplicates():
-    fig.add_vrect(
-        x0=dt, x1=dt + timedelta(days=6),
-        fillcolor="green", opacity=0.1, line_width=0,
-        layer="below", row=4, col=1
-    )
-
-# --- Subplot 5: Rainfall ---
+# Add all 5 plots
+add_trace(1, 1, "dengue_cases", "Dengue Cases (Weekly Sum)", "crimson", highlight_cond=(filtered["meets_threshold"]), highlight_color="red")
+add_trace(2, 1, "temperature_2m_max", "Max Temperature (°C) (Weekly Max)", "orange", highlight_cond=(filtered["temperature_2m_max"] <= 35), highlight_color="orange")
+add_trace(3, 1, "temperature_2m_min", "Min Temperature (°C) (Weekly Min)", "blue", highlight_cond=(filtered["temperature_2m_min"] >= 18), highlight_color="blue")
+add_trace(4, 1, "relative_humidity_2m_mean", "Mean Relative Humidity (%) (Weekly Mean)", "green", highlight_cond=(filtered["relative_humidity_2m_mean"] >= 60), highlight_color="green")
 add_trace(5, 1, "rain_sum", "Rainfall (mm) (Weekly Sum)", "purple")
 
-# --- Y-axis label font size ---
+# --- X-axis config for all subplots ---
 for i in range(1, 6):
-    fig.update_yaxes(title_font=dict(size=12, color="black"), row=i, col=1)
-
-# --- Add X-axis label for last chart ---
-fig.update_xaxes(
-    row=5, col=1,
-    title_text="Week Start Date",
-    title_font=dict(size=12),
-    title_standoff=30
-)
+    fig.update_xaxes(
+        row=i, col=1,
+        tickangle=-45,
+        tickformat="%d-%b-%y",
+        tickfont=dict(size=10, color='black'),
+        ticks="outside",
+        showgrid=True,
+        gridcolor='lightgray',
+        dtick=604800000,
+        range=[x_start, x_end]
+    )
 
 # --- Layout ---
 fig.update_layout(
@@ -184,20 +149,6 @@ fig.update_layout(
     paper_bgcolor="white",
     font=dict(color='black')
 )
-
-# --- X-axis config for all subplots with date range ---
-for i in range(1, 6):
-    fig.update_xaxes(
-        row=i, col=1,
-        tickangle=-45,
-        tickformat="%d-%b-%y",
-        tickfont=dict(size=10, color='black'),
-        ticks="outside",
-        showgrid=True,
-        gridcolor='lightgray',
-        dtick=604800000,
-        range=[x_start, x_end]
-    )
 
 # --- Display Chart ---
 st.plotly_chart(fig, use_container_width=True)
