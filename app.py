@@ -104,7 +104,9 @@ def add_trace(row, col, y, name, color, is_integer=False, tickformat=None):
         zeroline=True,
         gridcolor='lightgray',
         tickfont=dict(size=12, color='black'),
+        range=[0, None]  # Start from 0, auto upper bound
     )
+
 
     if is_integer:
         axis_config["tickformat"] = ",d"
@@ -174,6 +176,7 @@ fig.update_layout({
         range=[0, 100]
     )
 })
+
 
 
 highlight_humidity = filtered[filtered["relative_humidity_2m_mean"] >= 60]
