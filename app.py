@@ -1,3 +1,15 @@
+I will make the following changes to the provided code:
+
+1.  **Modify `add_trace` function:**
+
+      * Set `range=[0, None]` in `axis_config` to ensure the y-axis starts at 0 for all plots.
+      * Set `titlefont=dict(size=12, color="black")` in `axis_config` to change the y-axis label fontsize to 12 for all plots.
+
+2.  **Remove redundant `update_layout` calls for individual y-axes:** The `add_trace` function will handle the y-axis configuration, so the specific `fig.update_layout` blocks for `yaxis3` and `yaxis4` will be removed or streamlined if the common function covers them.
+
+Here's the modified code:
+
+```python
 import streamlit as st
 import pandas as pd
 import json
@@ -85,7 +97,7 @@ fig = make_subplots(
 )
 
 # --- Add Traces ---
-def add_trace(row, col, y, name, color, is_integer=False, tickformat=None):
+def add_trace(row, col, y, name, color, is_integer=False, tickformat=None, yaxis_range=None):
     fig.add_trace(go.Scatter(
         x=week_dates,
         y=filtered[y],
@@ -102,7 +114,8 @@ def add_trace(row, col, y, name, color, is_integer=False, tickformat=None):
         zeroline=True,
         gridcolor='lightgray',
         tickfont=dict(color='black', size=12),
-        range=[0, None]
+        titlefont=dict(size=12, color="black"), # Set y-axis label font size
+        range=yaxis_range if yaxis_range is not None else [0, None] # Ensure y-axis starts at 0
     )
     if is_integer:
         axis_config["tickformat"] = ",d"
@@ -137,14 +150,7 @@ for dt in highlight_max["week_start_date"].drop_duplicates():
     )
 
 # --- Subplot 3: Min Temperature ---
-fig.add_trace(go.Scatter(
-    x=week_dates,
-    y=filtered["temperature_2m_min"],
-    name="Min Temperature (°C) (Weekly Min)",
-    mode="lines+markers",
-    marker=dict(size=4),
-    line=dict(color="blue")
-), row=3, col=1)
+add_trace(3, 1, "temperature_2m_min", "Min Temperature (°C) (Weekly Min)", "blue")
 
 highlight_min = filtered[filtered["temperature_2m_min"] >= 18]
 for dt in highlight_min["week_start_date"].drop_duplicates():
@@ -154,41 +160,8 @@ for dt in highlight_min["week_start_date"].drop_duplicates():
         layer="below", row=3, col=1
     )
 
-# --- Force Y-axis for Min Temp plot to start from 0 and set font size ---
-# --- Force Y-axis for Min Temp plot to start from 0 and set font size ---
-fig.update_layout(
-    yaxis3=dict(
-        title="Min Temperature (°C) (Weekly Min)",
-        range=[0, None],
-        showgrid=True,
-        zeroline=True,
-        gridcolor="lightgray",
-        tickfont=dict(color="black", size=12),
-        titlefont=dict(size=12, color="black")
-    )
-)
-
-
 # --- Subplot 4: Humidity ---
-fig.add_trace(go.Scatter(
-    x=week_dates,
-    y=filtered["relative_humidity_2m_mean"],
-    name="Mean Relative Humidity (%) (Weekly Mean)",
-    mode="lines+markers",
-    marker=dict(size=4),
-    line=dict(color="green")
-), row=4, col=1)
-
-fig.update_layout({
-    "yaxis4": dict(
-        title="Mean Relative Humidity (%) (Weekly Mean)",
-        showgrid=True,
-        zeroline=True,
-        gridcolor='lightgray',
-        tickfont=dict(color='black', size=12),
-        range=[0, 100]
-    )
-})
+add_trace(4, 1, "relative_humidity_2m_mean", "Mean Relative Humidity (%) (Weekly Mean)", "green", yaxis_range=[0, 100])
 
 highlight_humidity = filtered[filtered["relative_humidity_2m_mean"] >= 60]
 for dt in highlight_humidity["week_start_date"].drop_duplicates():
@@ -241,9 +214,10 @@ st.plotly_chart(fig, use_container_width=True)
 
 # --- Threshold Notes ---
 st.markdown("""
-**Note on Thresholds**:  
+**Note on Thresholds**:
 - **Dengue Cases**: Weeks shaded **red** indicate that Max Temperature (°C) ≤ 35°C AND Min Temperature (°C) ≥ 18°C OR Mean Relative Humidity (%) ≥ 60%.
-- **Max Temperature (°C)**: Weeks shaded **orange** indicate values ≤ 35°C.  
-- **Min Temperature (°C)**: Weeks shaded **blue** indicate values ≥ 18°C.  
+- **Max Temperature (°C)**: Weeks shaded **orange** indicate values ≤ 35°C.
+- **Min Temperature (°C)**: Weeks shaded **blue** indicate values ≥ 18°C.
 - **Mean Relative Humidity (%)**: Weeks shaded **green** indicate values ≥ 60%.
 """)
+```
