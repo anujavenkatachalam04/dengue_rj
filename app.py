@@ -187,4 +187,8 @@ st.markdown("""
 - **Max Temperature (°C)**: Weeks shaded **orange** indicate values ≤ 35°C.
 - **Min Temperature (°C)**: Weeks shaded **blue** indicate values ≥ 18°C.
 - **Mean Relative Humidity (%)**: Weeks shaded **green** indicate values ≥ 60%.
+
+**Note on Case Increase Detection**:
+- An increase in cases is detected when **this week’s cases > last week’s**, and **last week’s > two weeks ago** — indicating a **two-week sustained rise** in dengue cases.
 """)
+
