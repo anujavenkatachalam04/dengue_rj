@@ -40,8 +40,16 @@ if not os.path.exists(csv_path):
 @st.cache_data
 def load_data():
     df = pd.read_csv(csv_path, parse_dates=["week_start_date"])
-    df['dtname_disp'] = df['dtname_disp'].astype(str).str.strip()
+    df['dtname'] = df['dtname'].astype(str).str.strip()
     df['sdtname'] = df['sdtname'].astype(str).str.strip()
+    df['high_incidence_district'] = df['high_incidence_district'].astype(bool)
+
+    # Create dtname_disp
+    df["dtname_disp"] = df.apply(
+        lambda row: f"{row['dtname']} (High)" if row["high_incidence_district"] else row["dtname"],
+        axis=1
+    )
+
     if "meets_threshold" in df.columns:
         df["meets_threshold"] = df["meets_threshold"].astype(str).str.lower() == "true"
     return df
@@ -66,19 +74,22 @@ week_dates = filtered["week_start_date"]
 x_start = filtered["week_start_date"].min()
 x_end = filtered["week_start_date"].max()
 
-# --- Extract lags for selected location ---
+# --- Extract lags ---
 trigger = filtered["trigger_date"].iloc[0]
-lag_all = int(filtered["lag_all"].iloc[0]) if pd.notna(filtered["lag_all"].iloc[0]) else '–'
-lag_min = int(filtered["lag_min"].iloc[0]) if pd.notna(filtered["lag_min"].iloc[0]) else '–'
-lag_max = int(filtered["lag_max"].iloc[0]) if pd.notna(filtered["lag_max"].iloc[0]) else '–'
-lag_hum = int(filtered["lag_hum"].iloc[0]) if pd.notna(filtered["lag_hum"].iloc[0]) else '–'
+lag_all = filtered["lag_all"].iloc[0]
+lag_min = filtered["lag_min"].iloc[0]
+lag_max = filtered["lag_max"].iloc[0]
+lag_hum = filtered["lag_hum"].iloc[0]
+
+def fmt_lag(val):
+    return f"{int(val)} week{'s' if int(val) != 1 else ''}" if pd.notna(val) else "–"
 
 # --- Create Subplots with lag info in titles ---
 subplot_titles = [
-    f"Dengue Cases (Lag: {lag_all} week{'s' if lag_all != 1 else ''})",
-    f"Max Temperature (°C) (Lag: {lag_max} week{'s' if lag_max != 1 else ''})",
-    f"Min Temperature (°C) (Lag: {lag_min} week{'s' if lag_min != 1 else ''})",
-    f"Mean Relative Humidity (%) (Lag: {lag_hum} week{'s' if lag_hum != 1 else ''})",
+    f"Dengue Cases (Lag: {fmt_lag(lag_all)})",
+    f"Max Temperature (°C) (Lag: {fmt_lag(lag_max)})",
+    f"Min Temperature (°C) (Lag: {fmt_lag(lag_min)})",
+    f"Mean Relative Humidity (%) (Lag: {fmt_lag(lag_hum)})",
     "Rainfall (mm)"
 ]
 
@@ -112,7 +123,6 @@ def add_trace(row, col, y_data_col, trace_name, color, highlight_cond=None, high
         range=[0, None]
     )
 
-    # Highlight weeks
     if highlight_cond is not None and highlight_color:
         highlight_weeks = filtered[highlight_cond]
         for dt in highlight_weeks["week_start_date"].drop_duplicates():
@@ -162,6 +172,13 @@ fig.update_layout(
 
 # --- Display Chart ---
 st.plotly_chart(fig, use_container_width=True)
+
+# --- Display % of blocks with at least one case ---
+pct_blocks = filtered["pct_blocks_with_cases"].iloc[0] if "pct_blocks_with_cases" in filtered.columns else None
+if pd.notna(pct_blocks):
+    st.markdown(f"<div style='font-size: 14px; color: gray; margin-top: -20px;'>"
+                f"**{pct_blocks:.1f}%** of blocks in this district reported at least one dengue case between June 2024 and June 2025."
+                f"</div>", unsafe_allow_html=True)
 
 # --- Threshold Notes ---
 st.markdown("""
