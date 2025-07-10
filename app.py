@@ -1,15 +1,4 @@
-I will make the following changes to the provided code:
 
-1.  **Modify `add_trace` function:**
-
-      * Set `range=[0, None]` in `axis_config` to ensure the y-axis starts at 0 for all plots.
-      * Set `titlefont=dict(size=12, color="black")` in `axis_config` to change the y-axis label fontsize to 12 for all plots.
-
-2.  **Remove redundant `update_layout` calls for individual y-axes:** The `add_trace` function will handle the y-axis configuration, so the specific `fig.update_layout` blocks for `yaxis3` and `yaxis4` will be removed or streamlined if the common function covers them.
-
-Here's the modified code:
-
-```python
 import streamlit as st
 import pandas as pd
 import json
@@ -220,4 +209,3 @@ st.markdown("""
 - **Min Temperature (°C)**: Weeks shaded **blue** indicate values ≥ 18°C.
 - **Mean Relative Humidity (%)**: Weeks shaded **green** indicate values ≥ 60%.
 """)
-```
