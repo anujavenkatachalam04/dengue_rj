@@ -68,7 +68,7 @@ x_end = filtered["week_start_date"].max()
 
 # --- Create Subplots ---
 fig = make_subplots(
-    rows=5, cols=1, shared_xaxes=True,
+    rows=5, cols=1, shared_xaxes=False,
     vertical_spacing=0.05,
     subplot_titles=[
         "Dengue Cases",
