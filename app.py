@@ -85,31 +85,32 @@ fig = make_subplots(
 )
 
 # --- Add Traces ---
-def add_trace(row, col, y, name, color, is_integer=False, tickformat=None, yaxis_range=None):
+def add_trace(row, col, y_data_col, trace_name, color, is_integer=False, tickformat=None, yaxis_range=None):
     fig.add_trace(go.Scatter(
         x=week_dates,
-        y=filtered[y],
-        name=name,
+        y=filtered[y_data_col],
+        name=trace_name,
         mode="lines+markers",
         marker=dict(size=4),
         line=dict(color=color)
     ), row=row, col=col)
 
     # Update y-axis properties for the specific subplot
-    yaxis_update_dict = dict(
+    # Do NOT include 'title' here, as it's handled by subplot_titles
+    fig.update_yaxes(
+        row=row,
+        col=col,
         showgrid=True,
         zeroline=True,
         gridcolor='lightgray',
         tickfont=dict(color='black', size=12),
-        titlefont=dict(size=12, color="black"), # Set y-axis label font size
+        title_font=dict(size=12, color="black"), # Set y-axis label font size
         range=yaxis_range if yaxis_range is not None else [0, None] # Ensure y-axis starts at 0
     )
     if is_integer:
-        yaxis_update_dict["tickformat"] = ",d"
+        fig.update_yaxes(tickformat=",d", row=row, col=col)
     elif tickformat:
-        yaxis_update_dict["tickformat"] = tickformat
-
-    fig.update_yaxes(yaxis_update_dict, row=row, col=col)
+        fig.update_yaxes(tickformat=tickformat, row=row, col=col)
 
 
 # --- Subplot 1: Dengue Cases ---
