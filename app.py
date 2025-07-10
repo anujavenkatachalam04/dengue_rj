@@ -175,7 +175,7 @@ for dt in highlight_humidity["week_start_date"].drop_duplicates():
     )
 
 # --- Subplot 5: Rainfall (Fix tickformat) ---
-add_trace(5, 1, "rain_sum", "Rainfall (mm) (Weekly Sum)", "purple", tickformat=".2f")
+add_trace(5, 1, "rain_sum", "Rainfall (mm) (Weekly Sum)", "purple")
 
 # --- Add X-axis label for last chart ---
 fig.update_xaxes(
