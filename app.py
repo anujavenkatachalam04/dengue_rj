@@ -3,6 +3,7 @@ import pandas as pd
 import json
 import os
 import tempfile
+from datetime import timedelta
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 from oauth2client.service_account import ServiceAccountCredentials
@@ -70,7 +71,7 @@ week_dates = filtered["week_start_date"]
 # --- Create Plotly Subplots ---
 fig = make_subplots(
     rows=5, cols=1, shared_xaxes=False,
-    vertical_spacing=0.05,  # Increased spacing
+    vertical_spacing=0.05,
     subplot_titles=[
         "Dengue Cases",
         "Max Temperature (°C)",
@@ -109,7 +110,7 @@ add_trace(1, 1, "dengue_cases", "Dengue Cases", "crimson", is_integer=True)
 add_trace(2, 1, "temperature_2m_max", "Max Temp", "orange")
 add_trace(3, 1, "temperature_2m_min", "Min Temp", "blue")
 
-# Humidity with fixed y-axis range from 0 to 100
+# Humidity (y-axis fixed)
 fig.add_trace(go.Scatter(
     x=week_dates,
     y=filtered["relative_humidity_2m_mean"],
@@ -126,26 +127,22 @@ fig.update_layout({
         zeroline=True,
         gridcolor='lightgray',
         tickfont=dict(color='black'),
-        range=[0, 100]  # Fix the axis range
+        range=[0, 100]
     )
 })
 
 add_trace(5, 1, "rain_sum", "Rainfall", "purple")
 
-# --- Highlight meets_threshold weeks ---
+# --- Highlight meets_threshold weeks with shaded regions ---
 highlight_weeks = filtered[filtered["meets_threshold"] == True]
 for dt in highlight_weeks["week_start_date"].drop_duplicates():
     fig.add_vrect(
         x0=dt,
-        x1=dt,
+        x1=dt + timedelta(days=6),
         fillcolor="red",
-        opacity=0.2,
-        layer="below",
+        opacity=0.15,
         line_width=0,
-        annotation_text="Threshold",
-        annotation_position="top left",
-        row="all",
-        col=1
+        layer="below"
     )
 
 # --- Update Layout ---
@@ -162,11 +159,11 @@ fig.update_layout(
 )
 
 # --- Configure X-axis per subplot ---
-for i in range(1, 6):  # For 5 subplots
+for i in range(1, 6):
     fig.update_xaxes(
         row=i, col=1,
         tickangle=-45,
-        tickformat="%d-%b",
+        tickformat="%d-%b-%y",  # e.g., 01-Jan-24
         tickfont=dict(size=11, color='black'),
         ticks="outside",
         showgrid=True,
