@@ -141,4 +141,33 @@ for i in range(1, 6):
         tickformat="%d-%b-%y",
         tickfont=dict(size=10, color='black'),
         ticks="outside",
-        showgrid
+        showgrid=True,
+        gridcolor='lightgray',
+        dtick=604800000,
+        range=[x_start, x_end]
+    )
+
+# --- Layout ---
+fig.update_layout(
+    height=2100,
+    width=3000,
+    title_text=f"Weekly Dengue and Climate Trends — Block: {selected_sdt}, District: {selected_dt}",
+    showlegend=False,
+    margin=dict(t=80, b=100),
+    template=None,
+    plot_bgcolor="white",
+    paper_bgcolor="white",
+    font=dict(color='black')
+)
+
+# --- Display Chart ---
+st.plotly_chart(fig, use_container_width=True)
+
+# --- Threshold Notes ---
+st.markdown("""
+**Note on Thresholds**:
+- **Dengue Cases**: Weeks shaded **red** indicate that Max Temperature (°C) ≤ 35°C AND Min Temperature (°C) ≥ 18°C OR Mean Relative Humidity (%) ≥ 60%.
+- **Max Temperature (°C)**: Weeks shaded **orange** indicate values ≤ 35°C.
+- **Min Temperature (°C)**: Weeks shaded **blue** indicate values ≥ 18°C.
+- **Mean Relative Humidity (%)**: Weeks shaded **green** indicate values ≥ 60%.
+""")
