@@ -96,7 +96,7 @@ def add_trace(row, col, y_data_col, trace_name, color, is_integer=False, tickfor
     ), row=row, col=col)
 
     # Update y-axis properties for the specific subplot
-    # Do NOT include 'title' here, as it's handled by subplot_titles
+    # The 'title' argument is excluded here as subplot_titles already sets it.
     fig.update_yaxes(
         row=row,
         col=col,
@@ -104,7 +104,6 @@ def add_trace(row, col, y_data_col, trace_name, color, is_integer=False, tickfor
         zeroline=True,
         gridcolor='lightgray',
         tickfont=dict(color='black', size=12),
-        title_font=dict(size=12, color="black"), # Set y-axis label font size
         range=yaxis_range if yaxis_range is not None else [0, None] # Ensure y-axis starts at 0
     )
     if is_integer:
@@ -129,6 +128,7 @@ for dt in highlight_weeks["week_start_date"].drop_duplicates():
     )
 
 # --- Subplot 2: Max Temperature ---
+# This will now start at 0 due to the range=[0, None] default in add_trace
 add_trace(2, 1, "temperature_2m_max", "Max Temperature (°C) (Weekly Max)", "orange")
 highlight_max = filtered[filtered["temperature_2m_max"] <= 35]
 for dt in highlight_max["week_start_date"].drop_duplicates():
@@ -139,6 +139,7 @@ for dt in highlight_max["week_start_date"].drop_duplicates():
     )
 
 # --- Subplot 3: Min Temperature ---
+# This will now start at 0 due to the range=[0, None] default in add_trace
 add_trace(3, 1, "temperature_2m_min", "Min Temperature (°C) (Weekly Min)", "blue")
 
 highlight_min = filtered[filtered["temperature_2m_min"] >= 18]
@@ -150,7 +151,7 @@ for dt in highlight_min["week_start_date"].drop_duplicates():
     )
 
 # --- Subplot 4: Humidity ---
-# Note: For humidity, we explicitly set the range to [0, 100] as it's a percentage.
+# Explicitly setting range to [0, 100] for percentage data
 add_trace(4, 1, "relative_humidity_2m_mean", "Mean Relative Humidity (%) (Weekly Mean)", "green", yaxis_range=[0, 100])
 
 highlight_humidity = filtered[filtered["relative_humidity_2m_mean"] >= 60]
@@ -163,6 +164,11 @@ for dt in highlight_humidity["week_start_date"].drop_duplicates():
 
 # --- Subplot 5: Rainfall ---
 add_trace(5, 1, "rain_sum", "Rainfall (mm) (Weekly Sum)", "purple")
+
+# --- Set Y-axis label font size for all subplots ---
+# This loop iterates through all subplots to set the font size for their y-axis titles.
+for i in range(1, 6):
+    fig.update_yaxes(title_font=dict(size=12, color="black"), row=i, col=1)
 
 # --- Add X-axis label for last chart ---
 fig.update_xaxes(
