@@ -162,6 +162,9 @@ fig.update_layout({
     )
 })
 
+# After adding the trace to subplot 3
+fig.update_yaxes(range=[0, None], row=3, col=1)
+
 # --- Subplot 4: Humidity ---
 fig.add_trace(go.Scatter(
     x=week_dates,
