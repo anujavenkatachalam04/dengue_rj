@@ -155,17 +155,19 @@ for dt in highlight_min["week_start_date"].drop_duplicates():
     )
 
 # --- Force Y-axis for Min Temp plot to start from 0 and set font size ---
-fig.update_layout({
-    "yaxis3": dict(
+# --- Force Y-axis for Min Temp plot to start from 0 and set font size ---
+fig.update_layout(
+    yaxis3=dict(
         title="Min Temperature (°C) (Weekly Min)",
-        range=[0, None],  # start from 0
+        range=[0, None],
         showgrid=True,
         zeroline=True,
         gridcolor="lightgray",
         tickfont=dict(color="black", size=12),
         titlefont=dict(size=12, color="black")
     )
-})
+)
+
 
 # --- Subplot 4: Humidity ---
 fig.add_trace(go.Scatter(
