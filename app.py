@@ -76,11 +76,11 @@ fig = make_subplots(
     rows=5, cols=1, shared_xaxes=False,
     vertical_spacing=0.05,
     subplot_titles=[
-        "Dengue Cases (Weekly Sum)",
-        "Max Temperature (°C) (Weekly Max)",
-        "Min Temperature (°C) (Weekly Min)",
-        "Mean Relative Humidity (%) (Weekly Mean)",
-        "Rainfall (mm) (Weekly Sum)"
+        "Dengue Cases",
+        "Max Temperature (°C)",
+        "Min Temperature (°C)",
+        "Mean Relative Humidity (%)",
+        "Rainfall (mm)"
     ]
 )
 
