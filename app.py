@@ -40,7 +40,7 @@ if not os.path.exists(csv_path):
 @st.cache_data
 def load_data():
     df = pd.read_csv(csv_path, parse_dates=["week_start_date"])
-    df['dtname'] = df['dtname'].astype(str).str.strip()
+    df['dtname_disp'] = df['dtname_disp'].astype(str).str.strip()
     df['sdtname'] = df['sdtname'].astype(str).str.strip()
     if "meets_threshold" in df.columns:
         df["meets_threshold"] = df["meets_threshold"].astype(str).str.lower() == "true"
@@ -49,14 +49,14 @@ def load_data():
 df = load_data()
 
 # --- Sidebar filters ---
-districts = ["All"] + sorted([d for d in df['dtname'].unique() if d != "All"])
+districts = ["All"] + sorted([d for d in df['dtname_disp'].unique() if d != "All"])
 selected_dt = st.sidebar.selectbox("Select District", districts)
 
-subdistricts = ["All"] + sorted([s for s in df[df['dtname'] == selected_dt]['sdtname'].unique() if s != "All"])
+subdistricts = ["All"] + sorted([s for s in df[df['dtname_disp'] == selected_dt]['sdtname'].unique() if s != "All"])
 selected_sdt = st.sidebar.selectbox("Select Block", subdistricts)
 
 # --- Filter based on selection ---
-filtered = df[(df['dtname'] == selected_dt) & (df['sdtname'] == selected_sdt)]
+filtered = df[(df['dtname_disp'] == selected_dt) & (df['sdtname'] == selected_sdt)]
 if filtered.empty:
     st.warning("No data available for this selection.")
     st.stop()
