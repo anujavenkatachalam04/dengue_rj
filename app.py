@@ -57,7 +57,14 @@ def load_data():
 df = load_data()
 
 # --- Sidebar filters ---
-districts = ["All"] + sorted([d for d in df['dtname_disp'].unique() if d != "All"])
+priority_districts = ['Jaipur (High)', 'Udaipur (High)', 'Bikaner (High)', 'Dausa (High)', 'Ajmer (High)']
+
+# All districts from data
+all_districts = sorted(set(df['dtname_disp'].unique()) - set(priority_districts) - {'All'})
+
+# Combine with "All" at the top
+districts = ["All"] + priority_districts + all_districts
+
 selected_dt = st.sidebar.selectbox("Select District", districts)
 
 subdistricts = ["All"] + sorted([s for s in df[df['dtname_disp'] == selected_dt]['sdtname'].unique() if s != "All"])
