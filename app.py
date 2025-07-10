@@ -68,14 +68,12 @@ if filtered.empty:
 filtered = filtered.sort_values("week_start_date")
 week_dates = filtered["week_start_date"]
 valid_dates = filtered[filtered["dengue_cases"].notna()]["week_start_date"]
+x_start = valid_dates.min()
+x_end = valid_dates.max()
 
-# Fix x_start and x_end to full date range, not just dengue cases
-x_start = filtered["week_start_date"].min()
-x_end = filtered["week_start_date"].max()
-
-# --- Create Subplots ---
+# --- Create Plotly Subplots ---
 fig = make_subplots(
-    rows=5, cols=1, shared_xaxes=True,  # shared_xaxes ensures all use same x range
+    rows=5, cols=1, shared_xaxes=False,
     vertical_spacing=0.05,
     subplot_titles=[
         "Dengue Cases",
@@ -87,7 +85,7 @@ fig = make_subplots(
 )
 
 # --- Add Traces ---
-def add_trace(row, col, y, name, color, is_integer=False, y_range=None):
+def add_trace(row, col, y, name, color, is_integer=False, tickformat=None):
     fig.add_trace(go.Scatter(
         x=week_dates,
         y=filtered[y],
@@ -103,23 +101,84 @@ def add_trace(row, col, y, name, color, is_integer=False, y_range=None):
         showgrid=True,
         zeroline=True,
         gridcolor='lightgray',
-        tickfont=dict(color='black', size=12)
+        tickfont=dict(color='black', size=12),
+        range=[0, None]
     )
     if is_integer:
         axis_config["tickformat"] = ",d"
-    if y_range:
-        axis_config["range"] = y_range
+    elif tickformat:
+        axis_config["tickformat"] = tickformat
 
     fig.update_layout({axis_name: axis_config})
 
-# --- Add Each Plot with Custom Y-axis Start at 0 ---
-add_trace(1, 1, "dengue_cases", "Dengue Cases (Weekly Sum)", "crimson", is_integer=True, y_range=[0, None])
-add_trace(2, 1, "temperature_2m_max", "Max Temperature (°C) (Weekly Max)", "orange", y_range=[0, None])
-add_trace(3, 1, "temperature_2m_min", "Min Temperature (°C) (Weekly Min)", "blue", y_range=[0, None])
-add_trace(4, 1, "relative_humidity_2m_mean", "Mean Relative Humidity (%) (Weekly Mean)", "green", y_range=[0, 100])
-add_trace(5, 1, "rain_sum", "Rainfall (mm) (Weekly Sum)", "purple", y_range=[0, None])
+# --- Subplot 1: Dengue Cases ---
+add_trace(1, 1, "dengue_cases", "Dengue Cases (Weekly Sum)", "crimson", is_integer=True)
 
-# --- Add X-axis label to last subplot only ---
+highlight_weeks = filtered[filtered["meets_threshold"] == True]
+for dt in highlight_weeks["week_start_date"].drop_duplicates():
+    fig.add_vrect(
+        x0=dt,
+        x1=dt + timedelta(days=6),
+        fillcolor="red",
+        opacity=0.15,
+        line_width=0,
+        layer="below",
+        row=1, col=1
+    )
+
+# --- Subplot 2: Max Temperature ---
+add_trace(2, 1, "temperature_2m_max", "Max Temperature (°C) (Weekly Max)", "orange")
+highlight_max = filtered[filtered["temperature_2m_max"] <= 35]
+for dt in highlight_max["week_start_date"].drop_duplicates():
+    fig.add_vrect(
+        x0=dt, x1=dt + timedelta(days=6),
+        fillcolor="orange", opacity=0.1, line_width=0,
+        layer="below", row=2, col=1
+    )
+
+# --- Subplot 3: Min Temperature ---
+add_trace(3, 1, "temperature_2m_min", "Min Temperature (°C) (Weekly Min)", "blue")
+highlight_min = filtered[filtered["temperature_2m_min"] >= 18]
+for dt in highlight_min["week_start_date"].drop_duplicates():
+    fig.add_vrect(
+        x0=dt, x1=dt + timedelta(days=6),
+        fillcolor="blue", opacity=0.1, line_width=0,
+        layer="below", row=3, col=1
+    )
+
+# --- Subplot 4: Humidity ---
+fig.add_trace(go.Scatter(
+    x=week_dates,
+    y=filtered["relative_humidity_2m_mean"],
+    name="Mean Relative Humidity (%) (Weekly Mean)",
+    mode="lines+markers",
+    marker=dict(size=4),
+    line=dict(color="green")
+), row=4, col=1)
+
+fig.update_layout({
+    "yaxis4": dict(
+        title="Mean Relative Humidity (%) (Weekly Mean)",
+        showgrid=True,
+        zeroline=True,
+        gridcolor='lightgray',
+        tickfont=dict(color='black', size=12),
+        range=[0, 100]
+    )
+})
+
+highlight_humidity = filtered[filtered["relative_humidity_2m_mean"] >= 60]
+for dt in highlight_humidity["week_start_date"].drop_duplicates():
+    fig.add_vrect(
+        x0=dt, x1=dt + timedelta(days=6),
+        fillcolor="green", opacity=0.1, line_width=0,
+        layer="below", row=4, col=1
+    )
+
+# --- Subplot 5: Rainfall ---
+add_trace(5, 1, "rain_sum", "Rainfall (mm) (Weekly Sum)", "purple")
+
+# --- Add X-axis label for last chart ---
 fig.update_xaxes(
     row=5, col=1,
     title_text="Week Start Date",
@@ -127,21 +186,7 @@ fig.update_xaxes(
     title_standoff=30
 )
 
-# --- Apply X-axis settings to all subplots ---
-for i in range(1, 6):
-    fig.update_xaxes(
-        row=i, col=1,
-        tickangle=-45,
-        tickformat="%d-%b-%y",
-        tickfont=dict(size=10),
-        ticks="outside",
-        showgrid=True,
-        gridcolor='lightgray',
-        range=[x_start, x_end],  # Force all plots to have same x range
-        dtick=604800000  # one week in ms
-    )
-
-# --- Final Layout ---
+# --- Layout ---
 fig.update_layout(
     height=2100,
     width=3000,
@@ -151,7 +196,8 @@ fig.update_layout(
     template=None,
     plot_bgcolor="white",
     paper_bgcolor="white",
-    font=dict(color='black')
+    font=dict(color='black'),
+    xaxis=dict(range=[x_start, x_end])
 )
 
 # --- Configure X-axis for all subplots ---
