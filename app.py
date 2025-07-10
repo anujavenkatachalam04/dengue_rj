@@ -166,7 +166,7 @@ fig.update_layout(
 for i in range(1, 6):
     fig.update_xaxes(
         row=i, col=1,
-        tickangle=-45,
+        tickangle=-90,
         tickformat="%d-%b-%y",
         tickfont=dict(size=11, color='black'),
         ticks="outside",
