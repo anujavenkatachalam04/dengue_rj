@@ -85,7 +85,7 @@ fig = make_subplots(
 )
 
 # --- Add Traces ---
-def add_trace(row, col, y, name, color, is_integer=False, tickformat=None, y_range=None):
+def add_trace(row, col, y, name, color, is_integer=False, tickformat=None):
     fig.add_trace(go.Scatter(
         x=week_dates,
         y=filtered[y],
@@ -101,14 +101,13 @@ def add_trace(row, col, y, name, color, is_integer=False, tickformat=None, y_ran
         showgrid=True,
         zeroline=True,
         gridcolor='lightgray',
-        tickfont=dict(color='black', size=12)
+        tickfont=dict(color='black', size=12),
+        range=[0, None]
     )
     if is_integer:
         axis_config["tickformat"] = ",d"
     elif tickformat:
         axis_config["tickformat"] = tickformat
-    if y_range:
-        axis_config["range"] = y_range
 
     fig.update_layout({axis_name: axis_config})
 
@@ -127,8 +126,8 @@ for dt in highlight_weeks["week_start_date"].drop_duplicates():
         row=1, col=1
     )
 
-# --- Subplot 2: Max Temperature (Start y from 0) ---
-add_trace(2, 1, "temperature_2m_max", "Max Temperature (°C) (Weekly Max)", "orange", y_range=[0, None])
+# --- Subplot 2: Max Temperature ---
+add_trace(2, 1, "temperature_2m_max", "Max Temperature (°C) (Weekly Max)", "orange")
 highlight_max = filtered[filtered["temperature_2m_max"] <= 35]
 for dt in highlight_max["week_start_date"].drop_duplicates():
     fig.add_vrect(
@@ -137,8 +136,8 @@ for dt in highlight_max["week_start_date"].drop_duplicates():
         layer="below", row=2, col=1
     )
 
-# --- Subplot 3: Min Temperature (Start y from 0) ---
-add_trace(3, 1, "temperature_2m_min", "Min Temperature (°C) (Weekly Min)", "blue", y_range=[0, None])
+# --- Subplot 3: Min Temperature ---
+add_trace(3, 1, "temperature_2m_min", "Min Temperature (°C) (Weekly Min)", "blue")
 highlight_min = filtered[filtered["temperature_2m_min"] >= 18]
 for dt in highlight_min["week_start_date"].drop_duplicates():
     fig.add_vrect(
