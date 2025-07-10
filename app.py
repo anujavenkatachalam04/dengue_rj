@@ -49,14 +49,40 @@ def load_data():
 df = load_data()
 
 # --- Sidebar filters ---
-districts = ["All"] + sorted([d for d in df['dtname'].unique() if d != "All"])
+st.sidebar.markdown("### Filters")
+
+# 1. High Incidence Toggle
+high_incidence_toggle = st.sidebar.radio(
+    "High Incidence Only?",
+    options=["No", "Yes"],
+    index=0,
+    horizontal=True
+)
+
+# 2. Filter districts based on toggle
+if high_incidence_toggle == "Yes":
+    filtered_df = df[df["high_incidence_district"] == True]
+else:
+    filtered_df = df
+
+# 3. District and Block filters
+districts = ["All"] + sorted(filtered_df['dtname'].unique())
 selected_dt = st.sidebar.selectbox("Select District", districts)
 
-subdistricts = ["All"] + sorted([s for s in df[df['dtname'] == selected_dt]['sdtname'].unique() if s != "All"])
+if selected_dt == "All":
+    subdistricts = ["All"]
+else:
+    subdistricts = ["All"] + sorted(filtered_df[filtered_df['dtname'] == selected_dt]['sdtname'].unique())
+
 selected_sdt = st.sidebar.selectbox("Select Block", subdistricts)
 
-# --- Filter based on selection ---
-filtered = df[(df['dtname'] == selected_dt) & (df['sdtname'] == selected_sdt)]
+# 4. Final filtering
+filtered = filtered_df.copy()
+if selected_dt != "All":
+    filtered = filtered[filtered["dtname"] == selected_dt]
+if selected_sdt != "All":
+    filtered = filtered[filtered["sdtname"] == selected_sdt]
+
 if filtered.empty:
     st.warning("No data available for this selection.")
     st.stop()
@@ -90,7 +116,6 @@ def add_trace(row, col, y_data_col, trace_name, color, highlight_cond=None, high
         line=dict(color=color)
     ), row=row, col=col)
 
-    # Set y-axis config for each subplot
     fig.update_yaxes(
         title_text=trace_name,
         row=row,
@@ -152,6 +177,13 @@ fig.update_layout(
 
 # --- Display Chart ---
 st.plotly_chart(fig, use_container_width=True)
+
+# --- Percentage of blocks with cases ---
+if not filtered.empty and "pct_blocks_with_cases" in filtered.columns:
+    pct_blocks = filtered["pct_blocks_with_cases"].iloc[0]
+    st.markdown(f"""
+    **% of blocks reporting at least 1 case (June 2024 – June 2025):** {pct_blocks:.1f}%
+    """)
 
 # --- Threshold Notes ---
 st.markdown("""
