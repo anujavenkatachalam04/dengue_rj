@@ -89,7 +89,7 @@ lag_max = filtered["lag_max"].iloc[0]
 lag_hum = filtered["lag_hum"].iloc[0]
 
 def fmt_lag(val):
-    return f"{int(val)} week{'s' if int(val) != 1 else ''}" if pd.notna(val) else "–"
+    return f"{int(val)} day{'s' if int(val) != 1 else ''}" if pd.notna(val) else "–"
 
 # --- Create Subplots with lag info in titles ---
 subplot_titles = [
